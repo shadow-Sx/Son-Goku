@@ -1,16 +1,8 @@
-from telebot.types import ReplyKeyboardMarkup, KeyboardButton
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 def admin_panel():
-    kb = ReplyKeyboardMarkup(resize_keyboard=True)
-
-    kb.add(KeyboardButton("❄ Birlamchi sozlamalar"))
-    kb.add(KeyboardButton("📊 Statistika"), KeyboardButton("✉ Xabar Yuborish"))
-    kb.add(KeyboardButton("📬 Post tayyorlash"))
-    kb.add(KeyboardButton("🎥 Animelar sozlash"), KeyboardButton("💳 Hamyonlar"))
-    kb.add(KeyboardButton("🔍 Foydalanuvchini boshqarish"))
-    kb.add(KeyboardButton("📢 Kanallar"), KeyboardButton("🎛 Tugmalar"))
-    kb.add(KeyboardButton("📄 Matnlar"))
-    kb.add(KeyboardButton("📋 Adminlar"), KeyboardButton("🤖 Bot holati"))
-    kb.add(KeyboardButton("◀️ Orqaga"))
-
+    kb = InlineKeyboardMarkup()
+    kb.add(InlineKeyboardButton("📊 Statistika", callback_data="stats"))
+    kb.add(InlineKeyboardButton("✉ Xabar yuborish", callback_data="send_msg"))
+    # keyin boshqa bo‘limlar qo‘shamiz
     return kb
