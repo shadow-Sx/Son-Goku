@@ -11,7 +11,7 @@ from telebot.types import (
 )
 from flask import Flask
 
-from config import BOT_TOKEN, ADMIN_ID
+from config import BOT_TOKEN, ADMIN_ID, MONGO_URL
 from database import db
 from admin_menu import admin_panel
 
@@ -293,6 +293,7 @@ def send_without_button(msg):
 # Pollingni threadda ishga tushirish
 # ============================
 def start_polling():
+    print(">>> POLLING STARTED <<<")
     bot.infinity_polling(skip_pending=True)
 
 
