@@ -3,7 +3,7 @@ import threading
 from flask import Flask
 import telebot
 
-from config import BOT_TOKEN, ADMIN_ID
+from config import BOT_TOKEN, ADMIN_ID, MONGO_URL
 from database import db
 from admin_menu import admin_panel
 
@@ -11,9 +11,9 @@ bot = telebot.TeleBot(BOT_TOKEN, parse_mode="Markdown")
 app = Flask(__name__)
 
 # ============================
-# Flask – Render uchun port ochadi
+# Flask – UptimeRobot uchun
 # ============================
-@app.route("/")
+@app.route("/", methods=["GET"])
 def home():
     return "Son-Goku polling is running!"
 
@@ -42,17 +42,20 @@ def start_cmd(msg):
     else:
         bot.send_message(msg.chat.id, text)
 
-# ============================
-# Qolgan handlerlar o‘z holicha qoladi
-# ============================
+# qolgan handlerlar o‘z holicha qoladi…
+
 
 # ============================
-# Pollingni alohida threadda ishga tushiramiz
+# Polling – fon threadda
 # ============================
 def start_polling():
     print(">>> POLLING STARTED <<<")
     bot.infinity_polling(skip_pending=True)
 
+
 if __name__ == "__main__":
+    # pollingni fon threadda ishga tushiramiz
     threading.Thread(target=start_polling, daemon=True).start()
+
+    # Flask – Render + UptimeRobot uchun
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 10000)))
