@@ -1,11 +1,24 @@
 import os
 from flask import Flask, request
 import telebot
+
 from config import BOT_TOKEN, ADMIN_ID, MONGO_URL
 from database import db
 from admin_menu import admin_panel
 
+# ============================
+# BOT
+# ============================
 bot = telebot.TeleBot(BOT_TOKEN, parse_mode="Markdown")
+
+# TELEBOT WEBHOOK MODE FIX (MUHIM!)
+WEBHOOK_URL = f"https://son-goku-8wg2.onrender.com/{BOT_TOKEN}"
+bot.remove_webhook()
+bot.set_webhook(url=WEBHOOK_URL)
+
+# ============================
+# FLASK
+# ============================
 app = Flask(__name__)
 
 @app.route("/", methods=["GET"])
@@ -18,6 +31,7 @@ def webhook():
     update = telebot.types.Update.de_json(json_str)
     bot.process_new_updates([update])
     return "OK", 200
+
 
 # ============================
 # /start
@@ -44,7 +58,14 @@ def start_cmd(msg):
     else:
         bot.send_message(msg.chat.id, text)
 
-# qolgan handlerlar o‘z holicha qoladi…
 
+# ============================
+# QOLGAN HANDLERLAR O‘Z HOLICHA QOLADI
+# ============================
+
+
+# ============================
+# FLASK RUN
+# ============================
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 10000)))
