@@ -134,4 +134,6 @@ def start_polling():
 
 if __name__ == "__main__":
     threading.Thread(target=start_polling, daemon=True).start()
-    app.run(host="0.0.0.0", port=10000)
+import os
+app.run(host="0.0.0.0", port=int(os.getenv("PORT", 10000)))
+
