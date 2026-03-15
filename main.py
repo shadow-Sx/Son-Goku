@@ -1,16 +1,25 @@
 import telebot
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 from datetime import datetime, timedelta
+from flask import Flask
+import threading
 
 from config import BOT_TOKEN, ADMIN_ID
 from database import db
 from admin_menu import admin_panel
 
 bot = telebot.TeleBot(BOT_TOKEN, parse_mode="Markdown")
+app = Flask(__name__)
 
-# Admin holatlari
 admin_state = {}
 admin_data = {}
+
+# ============================
+# Flask Web Service (Render uchun majburiy)
+# ============================
+@app.route('/')
+def home():
+    return "Bot is running!"
 
 # ============================
 # Admin bosh menyu
@@ -118,121 +127,11 @@ def back_to_admin(msg):
     bot.send_message(msg.chat.id, "🌸 Admin panel", reply_markup=admin_panel())
 
 # ============================
-# FORWARD rejimi
+# Pollingni threadda ishga tushiramiz
 # ============================
-@bot.message_handler(func=lambda m: m.text == "Forword")
-def forward_mode(msg):
-    admin_state[msg.from_user.id] = "await_forward_msg"
-    bot.send_message(msg.chat.id, "Forward qilinadigan xabarni yuboring.")
+def start_polling():
+    bot.infinity_polling(skip_pending=True)
 
-@bot.message_handler(func=lambda m: admin_state.get(m.from_user.id) == "await_forward_msg")
-def get_forward_msg(msg):
-    admin_data[msg.from_user.id] = msg
-    admin_state[msg.from_user.id] = "confirm_forward"
-
-    kb = ReplyKeyboardMarkup(resize_keyboard=True)
-    kb.add(KeyboardButton("Tasdiqlash"), KeyboardButton("Bekor qilish"))
-
-    bot.send_message(msg.chat.id, "Yuborishni xohlaysizmi?", reply_markup=kb)
-
-@bot.message_handler(func=lambda m: m.text == "Tasdiqlash")
-def forward_confirm(msg):
-    if admin_state.get(msg.from_user.id) != "confirm_forward":
-        return
-
-    fwd = admin_data[msg.from_user.id]
-    users = db.users.find({})
-
-    for u in users:
-        try:
-            bot.forward_message(u["user_id"], fwd.chat.id, fwd.message_id)
-        except:
-            pass
-
-    bot.send_message(msg.chat.id, "Xabar yuborildi!", reply_markup=admin_panel())
-    admin_state.pop(msg.from_user.id, None)
-    admin_data.pop(msg.from_user.id, None)
-
-@bot.message_handler(func=lambda m: m.text == "Bekor qilish")
-def forward_cancel(msg):
-    admin_state.pop(msg.from_user.id, None)
-    admin_data.pop(msg.from_user.id, None)
-    bot.send_message(msg.chat.id, "Bekor qilindi.", reply_markup=admin_panel())
-
-# ============================
-# ODDIY rejimi
-# ============================
-@bot.message_handler(func=lambda m: m.text == "Oddiy")
-def simple_mode(msg):
-    admin_state[msg.from_user.id] = "await_simple_text"
-    bot.send_message(msg.chat.id, "Xabar yuboring.")
-
-@bot.message_handler(func=lambda m: admin_state.get(m.from_user.id) == "await_simple_text")
-def get_simple_text(msg):
-    admin_data[msg.from_user.id] = {"text": msg.text}
-    admin_state[msg.from_user.id] = "simple_add_button"
-
-    kb = ReplyKeyboardMarkup(resize_keyboard=True)
-    kb.add(KeyboardButton("Ha"), KeyboardButton("O‘tkazib yuborish"))
-
-    bot.send_message(msg.chat.id, "Tugma qo‘shishni xohlaysizmi?", reply_markup=kb)
-
-@bot.message_handler(func=lambda m: m.text == "Ha")
-def ask_btn_name(msg):
-    if admin_state.get(msg.from_user.id) != "simple_add_button":
-        return
-
-    admin_state[msg.from_user.id] = "await_btn_name"
-    bot.send_message(msg.chat.id, "Tugma nomini kiriting.")
-
-@bot.message_handler(func=lambda m: admin_state.get(m.from_user.id) == "await_btn_name")
-def get_btn_name(msg):
-    admin_data[msg.from_user.id]["btn_name"] = msg.text
-    admin_state[msg.from_user.id] = "await_btn_url"
-    bot.send_message(msg.chat.id, "URL (havola) kiriting.")
-
-@bot.message_handler(func=lambda m: admin_state.get(m.from_user.id) == "await_btn_url")
-def get_btn_url(msg):
-    data = admin_data[msg.from_user.id]
-    text = data["text"]
-    btn_name = data["btn_name"]
-    url = msg.text
-
-    kb = InlineKeyboardMarkup()
-    kb.add(InlineKeyboardButton(btn_name, url=url))
-
-    users = db.users.find({})
-    for u in users:
-        try:
-            bot.send_message(u["user_id"], text, reply_markup=kb)
-        except:
-            pass
-
-    bot.send_message(msg.chat.id, "Xabar yuborildi!", reply_markup=admin_panel())
-
-    admin_state.pop(msg.from_user.id, None)
-    admin_data.pop(msg.from_user.id, None)
-
-@bot.message_handler(func=lambda m: m.text == "O‘tkazib yuborish")
-def send_without_button(msg):
-    if admin_state.get(msg.from_user.id) != "simple_add_button":
-        return
-
-    text = admin_data[msg.from_user.id]["text"]
-    users = db.users.find({})
-
-    for u in users:
-        try:
-            bot.send_message(u["user_id"], text)
-        except:
-            pass
-
-    bot.send_message(msg.chat.id, "Xabar yuborildi!", reply_markup=admin_panel())
-
-    admin_state.pop(msg.from_user.id, None)
-    admin_data.pop(msg.from_user.id, None)
-
-# ============================
-# Botni ishga tushirish
-# ============================
-bot.infinity_polling(skip_pending=True)
+if __name__ == "__main__":
+    threading.Thread(target=start_polling, daemon=True).start()
+    app.run(host="0.0.0.0", port=10000)
