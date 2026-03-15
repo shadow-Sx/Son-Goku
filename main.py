@@ -1,6 +1,5 @@
 import telebot
 from config import BOT_TOKEN, ADMIN_ID
-from user_menu import user_menu
 from admin_panel import admin_panel
 
 bot = telebot.TeleBot(BOT_TOKEN, parse_mode="Markdown")
