@@ -1,6 +1,8 @@
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton
 
-def admin_main_menu():
+def admin_panel():
     kb = ReplyKeyboardMarkup(resize_keyboard=True)
-    kb.add(KeyboardButton("🛠 Boshqarish"))
+    kb.add(KeyboardButton("📊 Statistika"))
+    kb.add(KeyboardButton("✉ Xabar yuborish"))
+    kb.add(KeyboardButton("⬅️ Orqaga"))
     return kb
