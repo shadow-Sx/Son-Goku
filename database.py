@@ -1,5 +1,5 @@
 from pymongo import MongoClient
-from config import MONGO_URI
+from config import MONGO_URL
 
-client = MongoClient(MONGO_URI)
-db = client["MangaDB"]
+client = MongoClient(MONGO_URL)
+db = client["SonGoku"]
