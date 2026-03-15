@@ -1,8 +1,7 @@
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+from telebot.types import ReplyKeyboardMarkup, KeyboardButton
 
 def admin_panel():
-    kb = InlineKeyboardMarkup()
-    kb.add(InlineKeyboardButton("📊 Statistika", callback_data="stats"))
-    kb.add(InlineKeyboardButton("✉ Xabar yuborish", callback_data="send_msg"))
-    # keyin boshqa bo‘limlar qo‘shamiz
+    kb = ReplyKeyboardMarkup(resize_keyboard=True)
+    kb.add(KeyboardButton("📊 Statistika"))
+    kb.add(KeyboardButton("✉ Xabar yuborish"))
     return kb
