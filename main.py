@@ -1,60 +1,86 @@
 import telebot
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from config import BOT_TOKEN, ADMIN_ID
-from admin_panel import admin_panel
+from database import db
 
 bot = telebot.TeleBot(BOT_TOKEN, parse_mode="Markdown")
 
-# /start
+
+# ============================
+# /start — Ongoing Animelar
+# ============================
 @bot.message_handler(commands=['start'])
 def start_cmd(msg):
-    bot.send_message(
-        msg.chat.id,
-        "🌸 Anime botga xush kelibsiz!",
-        reply_markup=user_menu(msg.from_user.id)
-    )
+    # Ongoing animelarni olish (status != completed)
+    animelist = list(db.anime.find({"status": {"$ne": "completed"}}))
 
-# 🛠 Boshqarish tugmasi
-@bot.message_handler(func=lambda m: m.text == "🛠 Boshqarish")
-def open_admin(msg):
-    if msg.from_user.id != ADMIN_ID:
-        return bot.send_message(msg.chat.id, "⛔ Siz admin emassiz.")
+    if not animelist:
+        return bot.send_message(msg.chat.id, "Hozircha ongoing animelar mavjud emas.")
 
-    bot.send_message(
-        msg.chat.id,
-        "🌸 Admin panel",
-        reply_markup=admin_panel()
-    )
+    text = "🎥 *Hozirgi Ongoing Animelar:*\n\n"
+    i = 1
 
-# Callbacklar (hozircha bo‘sh)
+    for anime in animelist:
+        name = anime.get("name", "Noma'lum")
+        current = anime.get("current", 0)
+        total = anime.get("total", 0)
+
+        text += f"{i}. {name} ({current}/{total})\n"
+        i += 1
+
+    # Inline tugmalar (raqamlar)
+    kb = InlineKeyboardMarkup()
+
+    for n in range(1, i):
+        kb.add(InlineKeyboardButton(str(n), callback_data=f"anime_{n}"))
+
+    # Admin uchun boshqaruv tugmasi
+    if msg.from_user.id == ADMIN_ID:
+        kb.add(InlineKeyboardButton("🛠 Boshqarish", callback_data="admin_panel"))
+
+    bot.send_message(msg.chat.id, text, reply_markup=kb)
+
+
+# ============================
+# Inline tugmalar callbacklari
+# ============================
 @bot.callback_query_handler(func=lambda call: True)
-def callbacks(call):
+def callback_handler(call):
     data = call.data
 
-    if data == "primary_settings":
-        bot.answer_callback_query(call.id, "❄ Birlamchi sozlamalar — hali qo‘shilmagan.")
-    elif data == "stats":
-        bot.answer_callback_query(call.id, "📊 Statistika — hali qo‘shilmagan.")
-    elif data == "send_msg":
-        bot.answer_callback_query(call.id, "✉ Xabar yuborish — hali qo‘shilmagan.")
-    elif data == "make_post":
-        bot.answer_callback_query(call.id, "📬 Post tayyorlash — hali qo‘shilmagan.")
-    elif data == "anime_settings":
-        bot.answer_callback_query(call.id, "🎥 Animelar sozlash — hali qo‘shilmagan.")
-    elif data == "wallets":
-        bot.answer_callback_query(call.id, "💳 Hamyonlar — hali qo‘shilmagan.")
-    elif data == "user_manage":
-        bot.answer_callback_query(call.id, "🔍 Foydalanuvchi boshqaruvi — hali qo‘shilmagan.")
-    elif data == "channels":
-        bot.answer_callback_query(call.id, "📢 Kanallar — hali qo‘shilmagan.")
-    elif data == "buttons":
-        bot.answer_callback_query(call.id, "🎛 Tugmalar — hali qo‘shilmagan.")
-    elif data == "texts":
-        bot.answer_callback_query(call.id, "📄 Matnlar — hali qo‘shilmagan.")
-    elif data == "admins":
-        bot.answer_callback_query(call.id, "📋 Adminlar — hali qo‘shilmagan.")
-    elif data == "bot_status":
-        bot.answer_callback_query(call.id, "🤖 Bot holati — hali qo‘shilmagan.")
-    elif data == "back_admin":
-        bot.answer_callback_query(call.id, "◀️ Orqaga — hali qo‘shilmagan.")
+    # Admin panelga o'tish
+    if data == "admin_panel":
+        from admin_panel import admin_panel
+        return bot.send_message(call.message.chat.id, "🌸 Admin panel", reply_markup=admin_panel())
 
-bot.infinity_polling()
+    # Anime tanlash
+    if data.startswith("anime_"):
+        index = int(data.split("_")[1]) - 1
+
+        animelist = list(db.anime.find({"status": {"$ne": "completed"}}))
+
+        if index < 0 or index >= len(animelist):
+            return bot.answer_callback_query(call.id, "Xato raqam!")
+
+        anime = animelist[index]
+
+        name = anime.get("name", "Noma'lum")
+        current = anime.get("current", 0)
+        total = anime.get("total", 0)
+
+        bot.send_message(
+            call.message.chat.id,
+            f"🎬 *{name}*\n\nEpizodlar: {current}/{total}",
+            parse_mode="Markdown"
+        )
+
+        return bot.answer_callback_query(call.id)
+
+    # Admin panel tugmalari (hozircha bo‘sh)
+    bot.answer_callback_query(call.id, "Bu bo‘lim hali qo‘shilmagan.")
+
+
+# ============================
+# 24/7 ishlash
+# ============================
+bot.infinity_polling(skip_pending=True)
