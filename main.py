@@ -479,9 +479,6 @@ def build_preview_text(state):
 # ==========================
 #   POLLING
 # ==========================
-def run_polling():
-    bot.infinity_polling(skip_pending=True)
-
 def run_flask():
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
@@ -492,3 +489,4 @@ if __name__ == "__main__":
 
     # Polling asosiy thread’da ishlaydi
     bot.infinity_polling(timeout=60, long_polling_timeout=60)
+
