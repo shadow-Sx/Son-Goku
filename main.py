@@ -6,7 +6,7 @@ from flask import Flask
 import telebot
 from telebot.types import ReplyKeyboardMarkup
 from admin_menu import admin_panel
-from database import db   # TO‘G‘RI IMPORT
+from database import db
 
 # ==========================
 #   TOKEN VA BOT
@@ -41,7 +41,6 @@ broadcast_state = {}
 def start(message):
     is_admin = (message.from_user.id == ADMIN_ID)
 
-    # foydalanuvchini bazaga yozish
     user_id = message.from_user.id
     if not users.find_one({"user_id": user_id}):
         users.insert_one({
@@ -64,7 +63,7 @@ def start(message):
         bot.send_message(message.chat.id, text)
 
 # ==========================
-#   ADMIN PANELGA KIRISH
+#   ADMIN PANEL
 # ==========================
 @bot.message_handler(func=lambda m: m.text == "🛠 Boshqarish" and m.from_user.id == ADMIN_ID)
 def open_admin(message):
@@ -74,9 +73,6 @@ def open_admin(message):
         reply_markup=admin_panel()
     )
 
-# ==========================
-#   ADMIN PANELDAN ORQAGA
-# ==========================
 @bot.message_handler(func=lambda m: m.text == "◀️ Orqaga" and m.from_user.id == ADMIN_ID)
 def back_to_user(message):
     kb = ReplyKeyboardMarkup(resize_keyboard=True)
@@ -117,7 +113,7 @@ def show_stats(message):
     bot.send_message(message.chat.id, get_stats())
 
 # ==========================
-#   ✉️ XABAR YUBORISH
+#   KLAVIATURALAR
 # ==========================
 def confirm_keyboard():
     kb = ReplyKeyboardMarkup(resize_keyboard=True)
@@ -129,16 +125,20 @@ def buttons_choice_keyboard():
     kb.row("Ha", "O‘tkazib yuborish")
     return kb
 
+def more_media_keyboard():
+    kb = ReplyKeyboardMarkup(resize_keyboard=True)
+    kb.row("➕ Yana media qo‘shish")
+    kb.row("➡️ Keyingi bosqich")
+    return kb
+
 def build_inline_keyboard(button_rows, link_rows):
     from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
     kb = InlineKeyboardMarkup()
-
     for btn_row, link_row in zip(button_rows, link_rows):
         row_buttons = []
         for name, link in zip(btn_row, link_row):
             row_buttons.append(InlineKeyboardButton(name, url=link))
         kb.row(*row_buttons)
-
     return kb
 
 # ==========================
@@ -147,14 +147,70 @@ def build_inline_keyboard(button_rows, link_rows):
 @bot.message_handler(func=lambda m: m.text == "✉️ Xabar yuborish" and m.from_user.id == ADMIN_ID)
 def start_broadcast(message):
     broadcast_state[message.from_user.id] = {
-        "step": "wait_message",
-        "mode": None,
-        "text": None,
-        "forward": None,
+        "step": "wait_content",
+        "mode": None,          # "forward" yoki "normal"
+        "media": [],           # [{"type": "photo", "file_id": "..."} ...]
+        "text": None,          # matn (caption yoki alohida)
         "buttons": [],
-        "links": []
+        "links": [],
+        "forward": None
     }
-    bot.send_message(message.chat.id, "✉️ *Menga xabar yuboring*", parse_mode="Markdown")
+    bot.send_message(
+        message.chat.id,
+        "✉️ *Menga xabar yuboring*\n\n"
+        "Matn, rasm, video, GIF, hujjat, audio, voice yoki forward yuborishingiz mumkin.",
+        parse_mode="Markdown"
+    )
+
+# ==========================
+#   KONTENTNI SAQLASH YORDAMCHISI
+# ==========================
+def save_content_to_state(message, state):
+    # forward bo‘lsa alohida
+    if message.forward_from or message.forward_from_chat:
+        state["mode"] = "forward"
+        state["forward"] = message
+        return
+
+    state["mode"] = "normal"
+
+    # captionni matn sifatida saqlash (agar hali text yo‘q bo‘lsa)
+    caption = getattr(message, "caption", None)
+    if caption and not state["text"]:
+        state["text"] = caption
+
+    ct = message.content_type
+
+    if ct == "text":
+        state["text"] = message.text
+
+    elif ct == "photo":
+        file_id = message.photo[-1].file_id
+        state["media"].append({"type": "photo", "file_id": file_id})
+
+    elif ct == "video":
+        file_id = message.video.file_id
+        state["media"].append({"type": "video", "file_id": file_id})
+
+    elif ct == "animation":
+        file_id = message.animation.file_id
+        state["media"].append({"type": "animation", "file_id": file_id})
+
+    elif ct == "document":
+        file_id = message.document.file_id
+        state["media"].append({"type": "document", "file_id": file_id})
+
+    elif ct == "audio":
+        file_id = message.audio.file_id
+        state["media"].append({"type": "audio", "file_id": file_id})
+
+    elif ct == "voice":
+        file_id = message.voice.file_id
+        state["media"].append({"type": "voice", "file_id": file_id})
+
+    elif ct == "sticker":
+        file_id = message.sticker.file_id
+        state["media"].append({"type": "sticker", "file_id": file_id})
 
 # ==========================
 #   ✉️ XABAR YUBORISH — HANDLER
@@ -165,24 +221,44 @@ def broadcast_handler(message):
     if not state:
         return
 
-    # 1) Xabarni qabul qilish
-    if state["step"] == "wait_message":
-        if message.forward_from or message.forward_from_chat:
-            state["mode"] = "forward"
-            state["forward"] = message
-            state["step"] = "final_confirm"
+    step = state["step"]
 
+    # 1) KONTENTNI QABUL QILISH
+    if step == "wait_content":
+        save_content_to_state(message, state)
+
+        if state["mode"] == "forward":
+            state["step"] = "final_confirm"
             bot.send_message(
                 message.chat.id,
                 "📨 Forward xabar qabul qilindi.\n\n"
                 "Haqiqatdan ham shu xabarni yubormoqchimisiz?",
                 reply_markup=confirm_keyboard()
             )
-        else:
-            state["mode"] = "normal"
-            state["text"] = message.text
-            state["step"] = "ask_buttons"
+            return
 
+        if not state["media"] and not state["text"]:
+            bot.send_message(message.chat.id, "❌ Hech qanday kontent topilmadi. Qayta yuboring.")
+            return
+
+        state["step"] = "more_media"
+        bot.send_message(
+            message.chat.id,
+            "➕ Yana media qo‘shasizmi yoki keyingi bosqichga o‘tasizmi?",
+            reply_markup=more_media_keyboard()
+        )
+        return
+
+    # 2) YANA MEDIA QO‘SHISH / KEYINGI BOSQICH
+    if step == "more_media":
+        if message.text == "➕ Yana media qo‘shish":
+            state["step"] = "wait_more_media"
+            bot.send_message(
+                message.chat.id,
+                "Yana media yuboring (rasm, video, GIF, hujjat, audio, voice, sticker)."
+            )
+        elif message.text == "➡️ Keyingi bosqich":
+            state["step"] = "ask_buttons"
             bot.send_message(
                 message.chat.id,
                 "Tugma qo‘shishni xohlaysizmi?",
@@ -190,29 +266,66 @@ def broadcast_handler(message):
             )
         return
 
-    # 2) Tugma qo‘shish yoki o‘tkazib yuborish
-    if state["step"] == "ask_buttons":
+    # 3) YANA MEDIA QABUL QILISH
+    if step == "wait_more_media":
+        save_content_to_state(message, state)
+
+        if state["mode"] == "forward":
+            state["step"] = "final_confirm"
+            bot.send_message(
+                message.chat.id,
+                "📨 Forward xabar qabul qilindi.\n\n"
+                "Haqiqatdan ham shu xabarni yubormoqchimisiz?",
+                reply_markup=confirm_keyboard()
+            )
+            return
+
+        if not state["media"] and not state["text"]:
+            bot.send_message(message.chat.id, "❌ Hech qanday kontent topilmadi. Qayta yuboring.")
+            return
+
+        state["step"] = "more_media"
+        bot.send_message(
+            message.chat.id,
+            "➕ Yana media qo‘shasizmi yoki keyingi bosqichga o‘tasizmi?",
+            reply_markup=more_media_keyboard()
+        )
+        return
+
+    # 4) TUGMA QO‘SHISH YOKI O‘TKAZIB YUBORISH
+    if step == "ask_buttons":
         if message.text == "O‘tkazib yuborish":
             state["step"] = "final_confirm"
 
+            preview = build_preview_text(state)
             bot.send_message(
                 message.chat.id,
-                f"📨 Yuboriladigan xabar:\n\n{state['text']}\n\n"
-                "Haqiqatdan ham yuborilsinmi?",
+                f"{preview}\n\nHaqiqatdan ham yuborilsinmi?",
                 reply_markup=confirm_keyboard()
             )
         elif message.text == "Ha":
             state["step"] = "ask_button_names"
-            bot.send_message(message.chat.id, "Tugmalar nomini yuboring (qator-qator):\nMasalan:\nanime, kino\nmangalar, manhwa")
+            bot.send_message(
+                message.chat.id,
+                "Tugmalar nomini yuboring (qator-qator):\n"
+                "Masalan:\n"
+                "anime, kino\n"
+                "mangalar, manhwa"
+            )
         return
 
-    # 3) Tugma nomlari
-    if state["step"] == "ask_button_names":
+    # 5) TUGMA NOMLARI
+    if step == "ask_button_names":
         rows = message.text.split("\n")
         buttons = []
         for row in rows:
             names = [n.strip() for n in row.split(",") if n.strip()]
-            buttons.append(names)
+            if names:
+                buttons.append(names)
+
+        if not buttons:
+            bot.send_message(message.chat.id, "❌ Hech qanday tugma topilmadi. Qayta yuboring.")
+            return
 
         state["buttons"] = buttons
         state["step"] = "ask_links"
@@ -227,8 +340,8 @@ def broadcast_handler(message):
         )
         return
 
-    # 4) Havolalar
-    if state["step"] == "ask_links":
+    # 6) HAVOLALAR
+    if step == "ask_links":
         rows = message.text.split("\n")
         links = []
 
@@ -236,11 +349,11 @@ def broadcast_handler(message):
             row_links = [l.strip() for l in row.split(",") if l.strip()]
             for link in row_links:
                 if not link.startswith("https://"):
-                    bot.send_message(message.chat.id, "❌ Link 'https://' bilan boshlanishi kerak.")
+                    bot.send_message(message.chat.id, "❌ Har bir link 'https://' bilan boshlanishi kerak.")
                     return
-            links.append(row_links)
+            if row_links:
+                links.append(row_links)
 
-        # tekshirish
         if len(links) != len(state["buttons"]):
             bot.send_message(message.chat.id, "❌ Qatorlar soni tugmalar bilan mos emas.")
             return
@@ -253,46 +366,115 @@ def broadcast_handler(message):
         state["links"] = links
         state["step"] = "final_confirm"
 
-        # tasdiqlash preview
-        preview = f"📨 Yuboriladigan xabar:\n\n{state['text']}\n\n📌 Tugmalar:\n\n"
-        for btn_row, link_row in zip(state["buttons"], state["links"]):
-            line = " | ".join([f"{b} = {l}" for b, l in zip(btn_row, link_row)])
-            preview += line + "\n"
-
+        preview = build_preview_text(state)
         bot.send_message(
             message.chat.id,
-            f"{preview}\nHaqiqatdan ham yuborilsinmi?",
+            f"{preview}\n\nHaqiqatdan ham yuborilsinmi?",
             reply_markup=confirm_keyboard()
         )
         return
 
-    # 5) Yakuniy tasdiqlash
-    if state["step"] == "final_confirm":
+    # 7) YAKUNIY TASDIQLASH
+    if step == "final_confirm":
         if message.text == "Bekor qilish":
             broadcast_state.pop(message.from_user.id, None)
             bot.send_message(message.chat.id, "Bekor qilindi.", reply_markup=admin_panel())
             return
 
-        # TASDIQLASH
-        if state["mode"] == "forward":
+        if message.text != "Tasdiqlash":
+            return
+
+        # FORWARD REJIMI
+        if state["mode"] == "forward" and state["forward"]:
             for user in users.find({}):
                 try:
-                    bot.forward_message(user["user_id"], state["forward"].chat.id, state["forward"].message_id)
+                    bot.forward_message(
+                        user["user_id"],
+                        state["forward"].chat.id,
+                        state["forward"].message_id
+                    )
                 except:
                     pass
         else:
+            # INLINE TUGMALAR
             markup = None
             if state["buttons"]:
                 markup = build_inline_keyboard(state["buttons"], state["links"])
 
-            for user in users.find({}):
-                try:
-                    bot.send_message(user["user_id"], state["text"], reply_markup=markup)
-                except:
-                    pass
+            # AVVAL MEDIA(LAR)
+            if state["media"]:
+                for m in state["media"]:
+                    t = m["type"]
+                    fid = m["file_id"]
+                    for user in users.find({}):
+                        try:
+                            if t == "photo":
+                                bot.send_photo(user["user_id"], fid)
+                            elif t == "video":
+                                bot.send_video(user["user_id"], fid)
+                            elif t == "animation":
+                                bot.send_animation(user["user_id"], fid)
+                            elif t == "document":
+                                bot.send_document(user["user_id"], fid)
+                            elif t == "audio":
+                                bot.send_audio(user["user_id"], fid)
+                            elif t == "voice":
+                                bot.send_voice(user["user_id"], fid)
+                            elif t == "sticker":
+                                bot.send_sticker(user["user_id"], fid)
+                        except:
+                            pass
+
+            # KEYIN MATN (AGAR BO‘LSA)
+            if state["text"]:
+                for user in users.find({}):
+                    try:
+                        bot.send_message(
+                            user["user_id"],
+                            state["text"],
+                            reply_markup=markup
+                        )
+                    except:
+                        pass
+            elif markup:
+                # Agar faqat tugma bo‘lsa, matnsiz yuborishning ma’nosi yo‘q,
+                # shuning uchun bu holatda tugmalarni e’tiborsiz qoldiramiz.
+                pass
 
         bot.send_message(message.chat.id, "Xabar yuborildi!", reply_markup=admin_panel())
         broadcast_state.pop(message.from_user.id, None)
+
+# ==========================
+#   PREVIEW YORDAMCHISI
+# ==========================
+def build_preview_text(state):
+    lines = ["📨 Yuboriladigan xabar:\n"]
+
+    if state["mode"] == "forward":
+        lines.append("🔁 Forward xabar yuboriladi.\n")
+        return "\n".join(lines)
+
+    if state["media"]:
+        lines.append(f"📷 Media soni: {len(state['media'])}")
+        types = {}
+        for m in state["media"]:
+            types[m["type"]] = types.get(m["type"], 0) + 1
+        for t, c in types.items():
+            lines.append(f"   • {t}: {c} ta")
+        lines.append("")
+
+    if state["text"]:
+        lines.append("📝 Matn:")
+        lines.append(state["text"])
+        lines.append("")
+
+    if state["buttons"]:
+        lines.append("📌 Tugmalar:")
+        for btn_row, link_row in zip(state["buttons"], state["links"]):
+            row = " | ".join([f"{b} = {l}" for b, l in zip(btn_row, link_row)])
+            lines.append(row)
+
+    return "\n".join(lines)
 
 # ==========================
 #   POLLING
