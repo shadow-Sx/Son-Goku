@@ -6,7 +6,7 @@ from flask import Flask
 import telebot
 from telebot.types import ReplyKeyboardMarkup
 from admin_menu import admin_panel
-from database import db
+from database import db   # TO‘G‘RI IMPORT
 
 # ==========================
 #   TOKEN VA BOT
@@ -141,6 +141,9 @@ def build_inline_keyboard(button_rows, link_rows):
 
     return kb
 
+# ==========================
+#   ✉️ XABAR YUBORISH — START
+# ==========================
 @bot.message_handler(func=lambda m: m.text == "✉️ Xabar yuborish" and m.from_user.id == ADMIN_ID)
 def start_broadcast(message):
     broadcast_state[message.from_user.id] = {
@@ -153,7 +156,10 @@ def start_broadcast(message):
     }
     bot.send_message(message.chat.id, "✉️ *Menga xabar yuboring*", parse_mode="Markdown")
 
-@bot.message_handler(func=lambda m: m.from_user.id == ADMIN_ID)
+# ==========================
+#   ✉️ XABAR YUBORISH — HANDLER
+# ==========================
+@bot.message_handler(func=lambda m: m.from_user.id in broadcast_state)
 def broadcast_handler(message):
     state = broadcast_state.get(message.from_user.id)
     if not state:
@@ -164,16 +170,19 @@ def broadcast_handler(message):
         if message.forward_from or message.forward_from_chat:
             state["mode"] = "forward"
             state["forward"] = message
-            state["step"] = "confirm_forward"
+            state["step"] = "final_confirm"
+
             bot.send_message(
                 message.chat.id,
-                "📨 Forward xabar qabul qilindi.\nYuborishni tasdiqlaysizmi?",
+                "📨 Forward xabar qabul qilindi.\n\n"
+                "Haqiqatdan ham shu xabarni yubormoqchimisiz?",
                 reply_markup=confirm_keyboard()
             )
         else:
             state["mode"] = "normal"
             state["text"] = message.text
             state["step"] = "ask_buttons"
+
             bot.send_message(
                 message.chat.id,
                 "Tugma qo‘shishni xohlaysizmi?",
@@ -185,9 +194,11 @@ def broadcast_handler(message):
     if state["step"] == "ask_buttons":
         if message.text == "O‘tkazib yuborish":
             state["step"] = "final_confirm"
+
             bot.send_message(
                 message.chat.id,
-                "Haqiqatdan ham shu xabarni yubormoqchimisiz?",
+                f"📨 Yuboriladigan xabar:\n\n{state['text']}\n\n"
+                "Haqiqatdan ham yuborilsinmi?",
                 reply_markup=confirm_keyboard()
             )
         elif message.text == "Ha":
@@ -243,15 +254,14 @@ def broadcast_handler(message):
         state["step"] = "final_confirm"
 
         # tasdiqlash preview
-        preview = ""
+        preview = f"📨 Yuboriladigan xabar:\n\n{state['text']}\n\n📌 Tugmalar:\n\n"
         for btn_row, link_row in zip(state["buttons"], state["links"]):
             line = " | ".join([f"{b} = {l}" for b, l in zip(btn_row, link_row)])
             preview += line + "\n"
 
         bot.send_message(
             message.chat.id,
-            f"📌 Tugmalar tayyor:\n\n{preview}\n"
-            "Haqiqatdan ham shu xabarni yubormoqchimisiz?",
+            f"{preview}\nHaqiqatdan ham yuborilsinmi?",
             reply_markup=confirm_keyboard()
         )
         return
