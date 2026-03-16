@@ -489,4 +489,3 @@ if __name__ == "__main__":
 
     # Polling asosiy thread’da ishlaydi
     bot.infinity_polling(timeout=60, long_polling_timeout=60)
-
