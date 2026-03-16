@@ -3,43 +3,28 @@ from telebot.types import ReplyKeyboardMarkup, KeyboardButton
 def admin_panel():
     kb = ReplyKeyboardMarkup(resize_keyboard=True)
 
-    # 1-qator
-    kb.add(
-        KeyboardButton("❄️ Birlamchi sozlamalar"),
-        KeyboardButton("📊 Statistika")
-    )
+    # 1-QATOR
+    kb.row("❄️ Birlamchi sozlamalar")
 
-    # 2-qator
-    kb.add(
-        KeyboardButton("✉️ Xabar Yuborish"),
-        KeyboardButton("📬 Post tayyorlash")
-    )
+    # 2-QATOR
+    kb.row("📊 Statistika", "✉️ Xabar yuborish")
 
-    # 3-qator
-    kb.add(
-        KeyboardButton("🎥 Animelar sozlash"),
-        KeyboardButton("💳 Hamyonlar")
-    )
+    # 3-QATOR
+    kb.row("📬 Post tayyorlash")
 
-    # 4-qator
-    kb.add(
-        KeyboardButton("🔍 Foydalanuvchini boshqarish"),
-        KeyboardButton("📢 Kanallar")
-    )
+    # 4-QATOR
+    kb.row("🎥 Animelar sozlash", "💳 Hamyonlar")
 
-    # 5-qator
-    kb.add(
-        KeyboardButton("🎛️ Tugmalar"),
-        KeyboardButton("📄 Matnlar")
-    )
+    # 5-QATOR
+    kb.row("🔍 Foydalanuvchini boshqarish")
 
-    # 6-qator
-    kb.add(
-        KeyboardButton("📋 Adminlar"),
-        KeyboardButton("🤖 Bot holati")
-    )
+    # 6-QATOR
+    kb.row("📢 Kanallar", "🎛 Tugmalar", "📄 Matnlar")
 
-    # Orqaga
-    kb.add(KeyboardButton("◀️ Orqaga"))
+    # 7-QATOR
+    kb.row("📋 Adminlar", "🤖 Bot holati")
+
+    # 8-QATOR
+    kb.row("◀️ Orqaga")
 
     return kb
