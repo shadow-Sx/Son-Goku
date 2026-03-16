@@ -6,7 +6,7 @@ from flask import Flask
 import telebot
 from telebot.types import ReplyKeyboardMarkup
 from admin_menu import admin_panel
-from databaza import db
+from database import db
 
 # ==========================
 #   TOKEN VA BOT
