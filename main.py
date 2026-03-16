@@ -148,9 +148,9 @@ def build_inline_keyboard(button_rows, link_rows):
 def start_broadcast(message):
     broadcast_state[message.from_user.id] = {
         "step": "wait_content",
-        "mode": None,          # "forward" yoki "normal"
-        "media": [],           # [{"type": "photo", "file_id": "..."} ...]
-        "text": None,          # matn (caption yoki alohida)
+        "mode": None,
+        "media": [],
+        "text": None,
         "buttons": [],
         "links": [],
         "forward": None
@@ -163,18 +163,15 @@ def start_broadcast(message):
     )
 
 # ==========================
-#   KONTENTNI SAQLASH YORDAMCHISI
+#   KONTENTNI SAQLASH
 # ==========================
 def save_content_to_state(message, state):
-    # forward bo‘lsa alohida
     if message.forward_from or message.forward_from_chat:
         state["mode"] = "forward"
         state["forward"] = message
         return
 
     state["mode"] = "normal"
-
-    # captionni matn sifatida saqlash (agar hali text yo‘q bo‘lsa)
     caption = getattr(message, "caption", None)
     if caption and not state["text"]:
         state["text"] = caption
@@ -183,34 +180,20 @@ def save_content_to_state(message, state):
 
     if ct == "text":
         state["text"] = message.text
-
     elif ct == "photo":
-        file_id = message.photo[-1].file_id
-        state["media"].append({"type": "photo", "file_id": file_id})
-
+        state["media"].append({"type": "photo", "file_id": message.photo[-1].file_id})
     elif ct == "video":
-        file_id = message.video.file_id
-        state["media"].append({"type": "video", "file_id": file_id})
-
+        state["media"].append({"type": "video", "file_id": message.video.file_id})
     elif ct == "animation":
-        file_id = message.animation.file_id
-        state["media"].append({"type": "animation", "file_id": file_id})
-
+        state["media"].append({"type": "animation", "file_id": message.animation.file_id})
     elif ct == "document":
-        file_id = message.document.file_id
-        state["media"].append({"type": "document", "file_id": file_id})
-
+        state["media"].append({"type": "document", "file_id": message.document.file_id})
     elif ct == "audio":
-        file_id = message.audio.file_id
-        state["media"].append({"type": "audio", "file_id": file_id})
-
+        state["media"].append({"type": "audio", "file_id": message.audio.file_id})
     elif ct == "voice":
-        file_id = message.voice.file_id
-        state["media"].append({"type": "voice", "file_id": file_id})
-
+        state["media"].append({"type": "voice", "file_id": message.voice.file_id})
     elif ct == "sticker":
-        file_id = message.sticker.file_id
-        state["media"].append({"type": "sticker", "file_id": file_id})
+        state["media"].append({"type": "sticker", "file_id": message.sticker.file_id})
 
 # ==========================
 #   ✉️ XABAR YUBORISH — HANDLER
@@ -223,7 +206,7 @@ def broadcast_handler(message):
 
     step = state["step"]
 
-    # 1) KONTENTNI QABUL QILISH
+    # 1) KONTENT QABUL QILISH
     if step == "wait_content":
         save_content_to_state(message, state)
 
@@ -231,39 +214,31 @@ def broadcast_handler(message):
             state["step"] = "final_confirm"
             bot.send_message(
                 message.chat.id,
-                "📨 Forward xabar qabul qilindi.\n\n"
-                "Haqiqatdan ham shu xabarni yubormoqchimisiz?",
+                "📨 Forward qabul qilindi.\nHaqiqatdan yuborilsinmi?",
                 reply_markup=confirm_keyboard()
             )
             return
 
         if not state["media"] and not state["text"]:
-            bot.send_message(message.chat.id, "❌ Hech qanday kontent topilmadi. Qayta yuboring.")
+            bot.send_message(message.chat.id, "❌ Kontent topilmadi. Qayta yuboring.")
             return
 
         state["step"] = "more_media"
         bot.send_message(
             message.chat.id,
-            "➕ Yana media qo‘shasizmi yoki keyingi bosqichga o‘tasizmi?",
+            "➕ Yana media qo‘shasizmi yoki davom etamizmi?",
             reply_markup=more_media_keyboard()
         )
         return
 
-    # 2) YANA MEDIA QO‘SHISH / KEYINGI BOSQICH
+    # 2) YANA MEDIA / KEYINGI BOSQICH
     if step == "more_media":
         if message.text == "➕ Yana media qo‘shish":
             state["step"] = "wait_more_media"
-            bot.send_message(
-                message.chat.id,
-                "Yana media yuboring (rasm, video, GIF, hujjat, audio, voice, sticker)."
-            )
+            bot.send_message(message.chat.id, "Yana media yuboring.")
         elif message.text == "➡️ Keyingi bosqich":
             state["step"] = "ask_buttons"
-            bot.send_message(
-                message.chat.id,
-                "Tugma qo‘shishni xohlaysizmi?",
-                reply_markup=buttons_choice_keyboard()
-            )
+            bot.send_message(message.chat.id, "Tugma qo‘shilsinmi?", reply_markup=buttons_choice_keyboard())
         return
 
     # 3) YANA MEDIA QABUL QILISH
@@ -272,31 +247,17 @@ def broadcast_handler(message):
 
         if state["mode"] == "forward":
             state["step"] = "final_confirm"
-            bot.send_message(
-                message.chat.id,
-                "📨 Forward xabar qabul qilindi.\n\n"
-                "Haqiqatdan ham shu xabarni yubormoqchimisiz?",
-                reply_markup=confirm_keyboard()
-            )
-            return
-
-        if not state["media"] and not state["text"]:
-            bot.send_message(message.chat.id, "❌ Hech qanday kontent topilmadi. Qayta yuboring.")
+            bot.send_message(message.chat.id, "📨 Forward qabul qilindi.\nTasdiqlaysizmi?", reply_markup=confirm_keyboard())
             return
 
         state["step"] = "more_media"
-        bot.send_message(
-            message.chat.id,
-            "➕ Yana media qo‘shasizmi yoki keyingi bosqichga o‘tasizmi?",
-            reply_markup=more_media_keyboard()
-        )
+        bot.send_message(message.chat.id, "➕ Yana media yoki davom?", reply_markup=more_media_keyboard())
         return
 
-    # 4) TUGMA QO‘SHISH YOKI O‘TKAZIB YUBORISH
+    # 4) TUGMA QO‘SHISH
     if step == "ask_buttons":
         if message.text == "O‘tkazib yuborish":
             state["step"] = "final_confirm"
-
             preview = build_preview_text(state)
             bot.send_message(
                 message.chat.id,
@@ -401,7 +362,7 @@ def broadcast_handler(message):
             if state["buttons"]:
                 markup = build_inline_keyboard(state["buttons"], state["links"])
 
-            # AVVAL MEDIA(LAR)
+            # MEDIA
             if state["media"]:
                 for m in state["media"]:
                     t = m["type"]
@@ -425,7 +386,7 @@ def broadcast_handler(message):
                         except:
                             pass
 
-            # KEYIN MATN (AGAR BO‘LSA)
+            # MATN
             if state["text"]:
                 for user in users.find({}):
                     try:
@@ -436,10 +397,6 @@ def broadcast_handler(message):
                         )
                     except:
                         pass
-            elif markup:
-                # Agar faqat tugma bo‘lsa, matnsiz yuborishning ma’nosi yo‘q,
-                # shuning uchun bu holatda tugmalarni e’tiborsiz qoldiramiz.
-                pass
 
         bot.send_message(message.chat.id, "Xabar yuborildi!", reply_markup=admin_panel())
         broadcast_state.pop(message.from_user.id, None)
@@ -477,14 +434,14 @@ def build_preview_text(state):
     return "\n".join(lines)
 
 # ==========================
-#   POLLING
+#   POLLING + FLASK (TO‘G‘RI ISHLAYDIGAN)
 # ==========================
 def run_flask():
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
 
 if __name__ == "__main__":
-    # Flaskni alohida thread’da ishga tushiramiz (daemon=False)
+    # MUHIM: daemon=False — Render Free rejimi threadni o‘chirib yubormasin
     flask_thread = threading.Thread(target=run_flask, daemon=False)
     flask_thread.start()
 
