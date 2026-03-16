@@ -484,8 +484,9 @@ def run_flask():
     app.run(host="0.0.0.0", port=port)
 
 if __name__ == "__main__":
-    # Flaskni alohida thread’da ishga tushiramiz
-    threading.Thread(target=run_flask, daemon=True).start()
+    # Flaskni alohida thread’da ishga tushiramiz (daemon=False)
+    flask_thread = threading.Thread(target=run_flask, daemon=False)
+    flask_thread.start()
 
     # Polling asosiy thread’da ishlaydi
     bot.infinity_polling(timeout=60, long_polling_timeout=60)
