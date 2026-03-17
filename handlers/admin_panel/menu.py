@@ -2,6 +2,9 @@ from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from loader import bot, ADMIN_ID
 from admin_menu import admin_panel
 
+# ==========================
+#   KATTA ADMIN PANEL
+# ==========================
 def big_admin_menu():
     kb = InlineKeyboardMarkup()
     kb.row(InlineKeyboardButton("❄️ Birlamchi sozlamalar", callback_data="settings"))
@@ -28,20 +31,27 @@ def big_admin_menu():
     return kb
 
 
-# 🛠 Boshqarish tugmasi
+# ==========================
+#   🛠 Boshqarish tugmasi
+# ==========================
 @bot.message_handler(func=lambda m: m.text == "🛠 Boshqarish" and m.from_user.id == ADMIN_ID)
 def open_admin_menu(message):
     bot.send_message(message.chat.id, "🛠 <b>Admin panel</b>", reply_markup=big_admin_menu())
 
 
-# ◀️ Orqaga → ReplyKeyboard ga qaytish
+# ==========================
+#   ◀️ Orqaga
+# ==========================
 @bot.callback_query_handler(func=lambda c: c.data == "admin_back")
 def close_admin_menu(call):
     bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id, reply_markup=None)
     bot.send_message(call.message.chat.id, "◀️ Orqaga qaytdingiz", reply_markup=admin_panel())
     bot.answer_callback_query(call.id)
 
-# ⭐⭐ BU YERGA QO‘YASAN ⭐⭐
+
+# ==========================
+#   📢 Kanallar bo‘limi
+# ==========================
 from handlers.channels.menu import channels_menu
 
 @bot.callback_query_handler(func=lambda c: c.data == "channels")
@@ -49,10 +59,24 @@ def open_channels(call):
     bot.send_message(call.message.chat.id, "📢 <b>Majburiy obuna kanallari</b>", reply_markup=channels_menu())
     bot.answer_callback_query(call.id)
 
-# FAOL BO‘LMAGAN TUGMALAR
+
+# ==========================
+#   🔍 Foydalanuvchini boshqarish
+# ==========================
+from handlers.user_manage.menu import user_manage_menu
+
+@bot.callback_query_handler(func=lambda c: c.data == "users")
+def open_user_manage(call):
+    bot.send_message(call.message.chat.id, "🔍 <b>Foydalanuvchini boshqarish</b>", reply_markup=user_manage_menu())
+    bot.answer_callback_query(call.id)
+
+
+# ==========================
+#   FAOL BO‘LMAGAN TUGMALAR
+# ==========================
 @bot.callback_query_handler(func=lambda c: c.data in [
     "settings", "stats", "broadcast", "post", "wallets",
-    "users", "channels", "buttons", "texts", "admins", "bot_status"
+    "buttons", "texts", "admins", "bot_status"
 ])
 def not_ready(call):
     bot.answer_callback_query(call.id, "❌ Bu bo‘lim hali faol emas!", show_alert=True)
