@@ -45,10 +45,14 @@ def check_subscription(call):
     not_joined = []
 
     for ch in channels:
+        channel_id = ch["channel_id"]  # ⭐ ID orqali tekshiramiz
+
         try:
-            member = bot.get_chat_member(ch["username"], user_id)
+            member = bot.get_chat_member(channel_id, user_id)
+
             if member.status not in ["member", "administrator", "creator"]:
                 not_joined.append(ch)
+
         except:
             not_joined.append(ch)
 
@@ -57,11 +61,10 @@ def check_subscription(call):
         bot.edit_message_reply_markup(
             call.message.chat.id,
             call.message.message_id,
-            reply_markup=subscription_menu(user_id)
+            reply_markup=subscription_menu(user_id, start_param="check")
         )
         return
 
     bot.answer_callback_query(call.id, "✅ Obuna tasdiqlandi!", show_alert=True)
     bot.delete_message(call.message.chat.id, call.message.message_id)
-
     bot.send_message(call.message.chat.id, "🎉 Siz botdan foydalanishingiz mumkin!")
