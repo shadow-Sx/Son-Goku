@@ -2,13 +2,11 @@ import os
 from flask import Flask, request
 import telebot
 
-# LOADERDAN BOT, DB, ADMIN_ID OLINADI
-from loader import bot, db, ADMIN_ID
-
-# ADMIN PANEL (ReplyKeyboard)
+from loader import bot, db, ADMIN_ID, is_vip
 from admin_menu import admin_panel
+from handlers.channels.check import subscription_menu
 
-# HANDLERLARNI ULASH (HAMMASI SHART!)
+# HANDLERLARNI ULASH
 from handlers.admin_panel import menu as admin_menu
 from handlers.admin_anime import menu as anime_menu
 from handlers.admin_anime import add_anime
@@ -16,17 +14,20 @@ from handlers.admin_anime import add_episode
 from handlers.admin_anime import list_anime
 from handlers.admin_anime import edit_anime
 
-# KANALLAR BO‘LIMI HANDLERLARI
+# Kanallar bo‘limi
 from handlers.channels import menu as channels_menu
 from handlers.channels import add as channels_add
 from handlers.channels import list as channels_list
 from handlers.channels import delete as channels_delete
 
+# Foydalanuvchi boshqaruvi (VIP)
+from handlers.user_manage import menu as user_manage_menu
+from handlers.user_manage import add_vip
+from handlers.user_manage import delete_vip
+from handlers.user_manage import list_vip
 
-# APP URL
 APP_URL = os.getenv("APP_URL")
 
-# FLASK APP
 app = Flask(__name__)
 
 
@@ -37,21 +38,31 @@ app = Flask(__name__)
 def start(message):
     user_id = message.from_user.id
 
-    # start param bo‘lsa (foydalanuvchi anime yoki qism ochishi)
+    # Agar start param bo‘lsa (keyin ishlatamiz)
     if " " in message.text:
-        bot.send_message(message.chat.id, "🎬 Anime ko‘rish bo‘limi keyin yoziladi.")
-        return
+        pass
 
     # ADMIN
     if user_id == ADMIN_ID:
+        bot.send_message(message.chat.id, "👋 Salom, admin!", reply_markup=admin_panel())
+        return
+
+    # VIP foydalanuvchi → majburiy obuna chiqmaydi
+    if is_vip(user_id):
+        bot.send_message(message.chat.id, "🎉 VIP foydalanuvchi sifatida xush kelibsiz!")
+        return
+
+    # Oddiy foydalanuvchi → majburiy obuna
+    channels = list(db.forced_channels.find())
+    if channels:
         bot.send_message(
             message.chat.id,
-            "👋 Salom, admin!",
-            reply_markup=admin_panel()
+            "📢 <b>Botdan foydalanish uchun quyidagi kanallarga obuna bo‘ling:</b>",
+            reply_markup=subscription_menu(user_id, start_param="check")
         )
         return
 
-    # ODDIY FOYDALANUVCHI
+    # Ongoing animelar
     animes = list(db.animes.find({"status": "Ongoing"}).sort("code", 1))
 
     if not animes:
