@@ -38,9 +38,9 @@ app = Flask(__name__)
 def start(message):
     user_id = message.from_user.id
 
-    # Agar start param bo‘lsa (keyin ishlatamiz)
-    if " " in message.text:
-        pass
+    # start param borligini tekshiramiz
+    parts = message.text.split()
+    start_param = parts[1] if len(parts) > 1 else None
 
     # ADMIN
     if user_id == ADMIN_ID:
@@ -52,17 +52,18 @@ def start(message):
         bot.send_message(message.chat.id, "🎉 VIP foydalanuvchi sifatida xush kelibsiz!")
         return
 
-    # Oddiy foydalanuvchi → majburiy obuna
-    channels = list(db.forced_channels.find())
-    if channels:
-        bot.send_message(
-            message.chat.id,
-            "📢 <b>Botdan foydalanish uchun quyidagi kanallarga obuna bo‘ling:</b>",
-            reply_markup=subscription_menu(user_id, start_param="check")
-        )
-        return
+    # ❗ Faqat havola orqali kelganda majburiy obuna chiqadi
+    if start_param == "check":
+        channels = list(db.forced_channels.find())
+        if channels:
+            bot.send_message(
+                message.chat.id,
+                "📢 <b>Botdan foydalanish uchun quyidagi kanallarga obuna bo‘ling:</b>",
+                reply_markup=subscription_menu(user_id, start_param="check")
+            )
+            return
 
-    # Ongoing animelar
+    # ❗ Oddiy /start → Ongoing Animelar chiqadi
     animes = list(db.animes.find({"status": "Ongoing"}).sort("code", 1))
 
     if not animes:
