@@ -21,11 +21,11 @@ app = Flask(__name__)
 #   DATABASE
 # ==========================
 mongo = MongoClient(MONGO_URI)
-db = mongo["anime_bot"]   # xohlasang nomini o‘zgartirishing mumkin
+db = mongo["anime_bot"]
 
 
 # ==========================
-#   ADMIN PANEL
+#   ADMIN PANEL (ReplyKeyboard)
 # ==========================
 from admin_menu import admin_panel
 
@@ -33,7 +33,11 @@ from admin_menu import admin_panel
 # ==========================
 #   HANDLER MODULLARNI ULASH
 # ==========================
-from handlers.admin_anime import menu
+# Katta admin panel
+from handlers.admin_panel import menu as admin_menu
+
+# Anime bo‘limi
+from handlers.admin_anime import menu as anime_menu
 from handlers.admin_anime import add_anime
 from handlers.admin_anime import add_episode
 from handlers.admin_anime import list_anime
@@ -49,17 +53,15 @@ def start(message):
 
     # start param bo‘lsa (foydalanuvchi anime yoki qism ochishi)
     if " " in message.text:
-        # Foydalanuvchi tomoni keyin yoziladi
         bot.send_message(message.chat.id, "🎬 Anime ko‘rish bo‘limi keyin yoziladi.")
         return
 
     # ADMIN
     if user_id == ADMIN_ID:
-        kb = admin_panel()
         bot.send_message(
             message.chat.id,
-            "👋 Salom, admin!\nAdmin panelga xush kelibsiz.",
-            reply_markup=kb
+            "👋 Salom, admin!",
+            reply_markup=admin_panel()
         )
         return
 
