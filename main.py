@@ -1,71 +1,35 @@
 import os
 from flask import Flask, request
 import telebot
-from pymongo import MongoClient
 
-# ==========================
-#   ENV VARIABLES
-# ==========================
-TOKEN = os.getenv("BOT_TOKEN")
-APP_URL = os.getenv("APP_URL")
-MONGO_URI = os.getenv("MONGO_URI")
-ADMIN_ID = int(os.getenv("ADMIN_ID", "7797502113"))
-
-# ==========================
-#   BOT & APP
-# ==========================
-bot = telebot.TeleBot(TOKEN, parse_mode="HTML")
-app = Flask(__name__)
-
-# ==========================
-#   DATABASE
-# ==========================
-mongo = MongoClient(MONGO_URI)
-db = mongo["anime_bot"]
-
-
-# ==========================
-#   ADMIN PANEL (ReplyKeyboard)
-# ==========================
+from loader import bot, db, ADMIN_ID
 from admin_menu import admin_panel
 
-
-# ==========================
-#   HANDLER MODULLARNI ULASH
-# ==========================
-# Katta admin panel
+# HANDLERLARNI ULASH
 from handlers.admin_panel import menu as admin_menu
-
-# Anime bo‘limi
 from handlers.admin_anime import menu as anime_menu
 from handlers.admin_anime import add_anime
 from handlers.admin_anime import add_episode
 from handlers.admin_anime import list_anime
 from handlers.admin_anime import edit_anime
 
+APP_URL = os.getenv("APP_URL")
 
-# ==========================
-#   /start
-# ==========================
+app = Flask(__name__)
+
+
 @bot.message_handler(commands=["start"])
 def start(message):
     user_id = message.from_user.id
 
-    # start param bo‘lsa (foydalanuvchi anime yoki qism ochishi)
     if " " in message.text:
         bot.send_message(message.chat.id, "🎬 Anime ko‘rish bo‘limi keyin yoziladi.")
         return
 
-    # ADMIN
     if user_id == ADMIN_ID:
-        bot.send_message(
-            message.chat.id,
-            "👋 Salom, admin!",
-            reply_markup=admin_panel()
-        )
+        bot.send_message(message.chat.id, "👋 Salom, admin!", reply_markup=admin_panel())
         return
 
-    # ODDIY FOYDALANUVCHI
     animes = list(db.animes.find({"status": "Ongoing"}).sort("code", 1))
 
     if not animes:
@@ -79,9 +43,6 @@ def start(message):
     bot.send_message(message.chat.id, text)
 
 
-# ==========================
-#   WEBHOOK ROUTES
-# ==========================
 @app.route("/", methods=["GET"])
 def index():
     return "Bot is running!"
@@ -94,18 +55,12 @@ def webhook():
     return "OK", 200
 
 
-# ==========================
-#   WEBHOOK SET
-# ==========================
 def set_webhook():
     bot.remove_webhook()
     bot.set_webhook(url=f"{APP_URL}/webhook")
     print("WEBHOOK SET:", f"{APP_URL}/webhook")
 
 
-# ==========================
-#   RUN
-# ==========================
 if __name__ == "__main__":
     set_webhook()
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
