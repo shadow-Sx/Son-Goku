@@ -10,8 +10,10 @@ def big_admin_menu():
         InlineKeyboardButton("✉️ Xabar yuborish", callback_data="broadcast")
     )
     kb.row(InlineKeyboardButton("📬 Post tayyorlash", callback_data="post"))
-    kb.row(InlineKeyboardButton("🎥 Animelar sozlash", callback_data="anime_menu"))
-    kb.row(InlineKeyboardButton("💳 Hamyonlar", callback_data="wallets"))
+    kb.row(
+        InlineKeyboardButton("🎥 Animelar sozlash", callback_data="anime_menu"),
+        InlineKeyboardButton("💳 Hamyonlar", callback_data="wallets")
+    )
     kb.row(InlineKeyboardButton("🔍 Foydalanuvchini boshqarish", callback_data="users"))
     kb.row(
         InlineKeyboardButton("📢 Kanallar", callback_data="channels"),
@@ -26,12 +28,24 @@ def big_admin_menu():
     return kb
 
 
+# 🛠 Boshqarish tugmasi
 @bot.message_handler(func=lambda m: m.text == "🛠 Boshqarish" and m.from_user.id == ADMIN_ID)
 def open_admin_menu(message):
     bot.send_message(message.chat.id, "🛠 <b>Admin panel</b>", reply_markup=big_admin_menu())
 
 
+# ◀️ Orqaga → ReplyKeyboard ga qaytish
 @bot.callback_query_handler(func=lambda c: c.data == "admin_back")
 def close_admin_menu(call):
+    bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id, reply_markup=None)
     bot.send_message(call.message.chat.id, "◀️ Orqaga qaytdingiz", reply_markup=admin_panel())
     bot.answer_callback_query(call.id)
+
+
+# FAOL BO‘LMAGAN TUGMALAR
+@bot.callback_query_handler(func=lambda c: c.data in [
+    "settings", "stats", "broadcast", "post", "wallets",
+    "users", "channels", "buttons", "texts", "admins", "bot_status"
+])
+def not_ready(call):
+    bot.answer_callback_query(call.id, "❌ Bu bo‘lim hali faol emas!", show_alert=True)
