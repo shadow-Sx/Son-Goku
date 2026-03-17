@@ -1,5 +1,4 @@
 from loader import bot, db, ADMIN_ID
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 waiting_for_channel = {}
 
@@ -18,17 +17,20 @@ def save_channel(message):
     uid = message.from_user.id
     username = message.text.strip()
 
+    # Username tekshirish
     if not username.startswith("@"):
         bot.send_message(message.chat.id, "❌ Username noto‘g‘ri. Masalan: @mychannel")
         return
 
+    # Kanalni olishga harakat qilamiz
     try:
         chat = bot.get_chat(username)
         title = chat.title
-    except:
+    except Exception as e:
         bot.send_message(message.chat.id, "❌ Kanal topilmadi yoki bot kanalga a'zo emas.")
         return
 
+    # DB ga yozamiz
     db.forced_channels.insert_one({
         "username": username,
         "title": title
