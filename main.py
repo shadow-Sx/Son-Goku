@@ -2,6 +2,8 @@ import os
 from flask import Flask, request
 import telebot
 
+from admin_menu import admin_panel   # <-- admin tugmalarni chaqiramiz
+
 TOKEN = os.getenv("BOT_TOKEN")
 APP_URL = os.getenv("APP_URL")
 
@@ -15,20 +17,36 @@ ADMIN_ID = 7797502113
 # ==========================
 @bot.message_handler(commands=['start'])
 def start(message):
-    if message.from_user.id == ADMIN_ID:
-        from telebot.types import ReplyKeyboardMarkup
-        kb = ReplyKeyboardMarkup(resize_keyboard=True)
-        kb.row("🛠 Admin panel")
-        bot.send_message(message.chat.id, "👋 Salom! Webhook ishlayapti.", reply_markup=kb)
+    user_id = message.from_user.id
+
+    if user_id == ADMIN_ID:
+        # ADMIN PANEL
+        kb = admin_panel()
+        bot.send_message(
+            message.chat.id,
+            "👋 Salom, admin!\nAdmin panelga xush kelibsiz.",
+            reply_markup=kb
+        )
     else:
-        bot.send_message(message.chat.id, "👋 Salom! Webhook ishlayapti.")
+        # ODDIY USER UCHUN
+        ongoing = (
+            "🔥 <b>Ongoing Animelar</b>\n\n"
+            "1️⃣ Solo Leveling\n"
+            "2️⃣ Mashle Season 2\n"
+            "3️⃣ Dungeon Meshi\n"
+            "4️⃣ One Piece (weekly)\n"
+            "5️⃣ Blue Lock Season 2\n"
+        )
+
+        bot.send_message(message.chat.id, ongoing)
 
 # ==========================
-#   ADMIN PANEL
+#   ADMIN PANEL HANDLER
 # ==========================
 @bot.message_handler(func=lambda m: m.text == "🛠 Admin panel" and m.from_user.id == ADMIN_ID)
-def admin_panel(message):
-    bot.send_message(message.chat.id, "⚙️ Admin panelga xush kelibsiz!")
+def admin_panel_open(message):
+    kb = admin_panel()
+    bot.send_message(message.chat.id, "⚙️ Admin panelga qaytdingiz.", reply_markup=kb)
 
 # ==========================
 #   FLASK WEBHOOK
