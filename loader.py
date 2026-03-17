@@ -10,3 +10,7 @@ bot = telebot.TeleBot(TOKEN, parse_mode="HTML")
 
 mongo = MongoClient(MONGO_URI)
 db = mongo["anime_bot"]
+
+# ⭐ VIP tekshirish funksiyasi
+def is_vip(user_id):
+    return db.vip_users.find_one({"user_id": user_id}) is not None
