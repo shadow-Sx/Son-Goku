@@ -41,6 +41,13 @@ def close_admin_menu(call):
     bot.send_message(call.message.chat.id, "◀️ Orqaga qaytdingiz", reply_markup=admin_panel())
     bot.answer_callback_query(call.id)
 
+# ⭐⭐ BU YERGA QO‘YASAN ⭐⭐
+from handlers.channels.menu import channels_menu
+
+@bot.callback_query_handler(func=lambda c: c.data == "channels")
+def open_channels(call):
+    bot.send_message(call.message.chat.id, "📢 <b>Majburiy obuna kanallari</b>", reply_markup=channels_menu())
+    bot.answer_callback_query(call.id)
 
 # FAOL BO‘LMAGAN TUGMALAR
 @bot.callback_query_handler(func=lambda c: c.data in [
