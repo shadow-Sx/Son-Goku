@@ -1,5 +1,4 @@
 from loader import bot, db
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 @bot.callback_query_handler(func=lambda c: c.data == "list_channels")
 def list_channels(call):
