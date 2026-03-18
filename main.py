@@ -21,6 +21,7 @@ from handlers.channels import menu as channels_menu
 from handlers.channels import add as channels_add
 from handlers.channels import list as channels_list
 from handlers.channels import delete as channels_delete
+from handlers.channels import check as channels_check
 
 # VIP FOYDALANUVCHI BOSHQARUV
 from handlers.user_manage import menu as user_manage_menu
