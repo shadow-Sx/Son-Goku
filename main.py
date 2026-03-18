@@ -39,6 +39,7 @@ app = Flask(__name__)
 # ==========================
 #   /start
 # ==========================
+print("FULL MESSAGE:", message.text)
 @bot.message_handler(commands=["start"])
 def start(message):
     user_id = message.from_user.id
