@@ -1,5 +1,6 @@
 from loader import bot, db, ADMIN_ID
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+from handlers.admin_panel.menu import big_admin_menu   # ⭐ TO‘G‘RI IMPORT
 
 temp_ep = {}
 
@@ -75,6 +76,10 @@ def add_episode_video(message):
         f"🔗 Havola: https://t.me/{bot.get_me().username}?start={code}"
     )
 
-    # Admin panelga qaytarish
-    from admin_menu import admin_panel
-    bot.send_message(message.chat.id, "🛠 Admin panel", reply_markup=admin_panel())
+    # ⭐ ADMIN PANELGA QAYTARISH
+    bot.send_message(
+        message.chat.id,
+        "🛠 Admin panel",
+        reply_markup=big_admin_menu()
+    )
+
