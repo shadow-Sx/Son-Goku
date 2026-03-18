@@ -4,31 +4,6 @@ import telebot
 
 from loader import bot, db, ADMIN_ID, is_vip
 from admin_menu import admin_panel
-
-# ADMIN PANEL
-from handlers.admin_panel import menu as admin_menu
-
-# ANIME ADMIN BO‘LIMI
-from handlers.admin_anime import menu as anime_menu
-from handlers.admin_anime import add_anime
-from handlers.admin_anime import add_episode
-from handlers.admin_anime import list_anime
-from handlers.admin_anime import edit_anime
-
-# KANALLAR BO‘LIMI
-from handlers.channels import menu as channels_menu
-from handlers.channels import add as channels_add
-from handlers.channels import list as channels_list
-from handlers.channels import delete as channels_delete
-from handlers.channels import check as channels_check
-
-# VIP FOYDALANUVCHI BOSHQARUV
-from handlers.user_manage import menu as user_manage_menu
-from handlers.user_manage import add_vip
-from handlers.user_manage import delete_vip
-from handlers.user_manage import list_vip
-
-# ⭐ ANIME SAHIFASI FUNKSIYASI
 from handlers.anime_page import open_anime_page
 
 APP_URL = os.getenv("APP_URL")
@@ -41,11 +16,10 @@ app = Flask(__name__)
 # ==========================
 @bot.message_handler(commands=["start"])
 def start(message):
-    print("FULL MESSAGE:", message.text)  # DEBUG
+    print("FULL MESSAGE:", message.text)
 
     user_id = message.from_user.id
 
-    # start paramni olish
     try:
         start_param = message.text.split(" ", 1)[1]
     except:
@@ -53,19 +27,16 @@ def start(message):
 
     print("START PARAM:", start_param)
 
-    # ADMIN → majburiy obuna yo‘q
+    # ADMIN → obuna tekshiruvi yo‘q
     if user_id == ADMIN_ID:
         return handle_start_param(message, start_param)
 
-    # VIP → majburiy obuna yo‘q
+    # VIP → obuna tekshiruvi yo‘q
     if is_vip(user_id):
         return handle_start_param(message, start_param)
 
-    # ==========================
-    #   MAJBURIY OBUNA
-    # ==========================
+    # MAJBURIY OBUNA
     channels = list(db.forced_channels.find())
-
     if channels:
         not_joined = []
 
@@ -86,7 +57,6 @@ def start(message):
             )
             return
 
-    # Obuna bo‘lgan → start parametrni ishlatamiz
     return handle_start_param(message, start_param)
 
 
@@ -95,19 +65,16 @@ def start(message):
 # ==========================
 def handle_start_param(message, start_param):
 
-    # ⭐ Anime sahifasi
     if start_param:
 
-        # start=2 → anime kodi
         if start_param.isdigit():
             return open_anime_page(message, int(start_param))
 
-        # start=anime_2 → anime kodi
         if start_param.startswith("anime_"):
             code = int(start_param.replace("anime_", ""))
             return open_anime_page(message, code)
 
-    # ⭐ Oddiy /start → Ongoing Animelar
+    # Oddiy /start
     animes = list(db.animes.find({"status": "Ongoing"}).sort("code", 1))
 
     if not animes:
@@ -122,7 +89,18 @@ def handle_start_param(message, start_param):
 
 
 # ==========================
-#   WEBHOOK ROUTES
+#   /stop — admin panel
+# ==========================
+@bot.message_handler(commands=["stop"])
+def stop(message):
+    if message.from_user.id == ADMIN_ID:
+        bot.send_message(message.chat.id, "🛠 Admin panel", reply_markup=admin_panel())
+    else:
+        bot.send_message(message.chat.id, "❌ Bu buyruq faqat admin uchun.")
+
+
+# ==========================
+#   WEBHOOK
 # ==========================
 @app.route("/", methods=["GET"])
 def index():
@@ -136,18 +114,12 @@ def webhook():
     return "OK", 200
 
 
-# ==========================
-#   WEBHOOK SET
-# ==========================
 def set_webhook():
     bot.remove_webhook()
     bot.set_webhook(url=f"{APP_URL}/webhook")
     print("WEBHOOK SET:", f"{APP_URL}/webhook")
 
 
-# ==========================
-#   RUN
-# ==========================
 if __name__ == "__main__":
     set_webhook()
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
