@@ -6,23 +6,21 @@ from loader import bot, db, ADMIN_ID, is_vip
 from admin_menu import admin_panel
 from handlers.channels.check import subscription_menu
 
-# ADMIN PANEL
+# HANDLERLARNI ULASH
 from handlers.admin_panel import menu as admin_menu
-
-# ANIME ADMIN BO‘LIMI
 from handlers.admin_anime import menu as anime_menu
 from handlers.admin_anime import add_anime
 from handlers.admin_anime import add_episode
 from handlers.admin_anime import list_anime
 from handlers.admin_anime import edit_anime
 
-# KANALLAR BO‘LIMI
+# Kanallar bo‘limi
 from handlers.channels import menu as channels_menu
 from handlers.channels import add as channels_add
 from handlers.channels import list as channels_list
 from handlers.channels import delete as channels_delete
 
-# VIP FOYDALANUVCHI BOSHQARUV
+# VIP boshqaruv
 from handlers.user_manage import menu as user_manage_menu
 from handlers.user_manage import add_vip
 from handlers.user_manage import delete_vip
@@ -40,14 +38,13 @@ app = Flask(__name__)
 def start(message):
     user_id = message.from_user.id
 
-    # start paramni olish (havola orqali kelganda)
+    # start paramni olish
     try:
         start_param = message.text.split(" ", 1)[1]
     except:
         start_param = None
 
-    # DEBUG (xohlasang olib tashlashing mumkin)
-    print("START PARAM:", start_param)
+    print("START PARAM:", start_param)  # DEBUG
 
     # ADMIN
     if user_id == ADMIN_ID:
