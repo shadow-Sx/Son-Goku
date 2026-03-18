@@ -60,7 +60,7 @@ def start(message):
         return handle_start_param(message, start_param)
 
     # ==========================
-    #   MAJBURIY OBUNA (HAR QANDAY start uchun)
+    #   MAJBURIY OBUNA
     # ==========================
     channels = list(db.forced_channels.find())
 
