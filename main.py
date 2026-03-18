@@ -51,12 +51,11 @@ def start(message):
 
     print("START PARAM:", start_param)
 
-    # ADMIN
+    # ADMIN → majburiy obuna yo‘q
     if user_id == ADMIN_ID:
-        bot.send_message(message.chat.id, "👋 Salom, admin!", reply_markup=admin_panel())
-        return
+        return handle_start_param(message, start_param)
 
-    # VIP foydalanuvchi → majburiy obuna yo‘q
+    # VIP → majburiy obuna yo‘q
     if is_vip(user_id):
         return handle_start_param(message, start_param)
 
