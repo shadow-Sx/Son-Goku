@@ -56,25 +56,47 @@ def start(message):
         bot.send_message(message.chat.id, "👋 Salom, admin!", reply_markup=admin_panel())
         return
 
-    # VIP foydalanuvchi → majburiy obuna chiqmaydi
+    # VIP foydalanuvchi → majburiy obuna yo‘q
     if is_vip(user_id):
-        bot.send_message(message.chat.id, "🎉 VIP foydalanuvchi sifatida xush kelibsiz!")
-        return
+        return handle_start_param(message, start_param)
 
-    # ❗ MAJBURIY OBUNA
-    if start_param == "check":
-        channels = list(db.forced_channels.find())
-        if channels:
+    # ==========================
+    #   MAJBURIY OBUNA (HAR QANDAY start uchun)
+    # ==========================
+    channels = list(db.forced_channels.find())
+
+    if channels:
+        not_joined = []
+
+        for ch in channels:
+            try:
+                member = bot.get_chat_member(ch["channel_id"], user_id)
+                if member.status not in ["member", "administrator", "creator"]:
+                    not_joined.append(ch)
+            except:
+                not_joined.append(ch)
+
+        if not_joined:
             from handlers.channels.check import subscription_menu
             bot.send_message(
                 message.chat.id,
                 "📢 <b>Botdan foydalanish uchun quyidagi kanallarga obuna bo‘ling:</b>",
-                reply_markup=subscription_menu(user_id, start_param="check")
+                reply_markup=subscription_menu(user_id, start_param)
             )
             return
 
-    # ⭐ ANIME SAHIFASI (MUHIM QISM)
+    # Obuna bo‘lgan → start parametrni ishlatamiz
+    return handle_start_param(message, start_param)
+
+
+# ==========================
+#   START PARAMETRNI ISHLASH
+# ==========================
+def handle_start_param(message, start_param):
+
+    # ⭐ Anime sahifasi
     if start_param:
+
         # start=2 → anime kodi
         if start_param.isdigit():
             return open_anime_page(message, int(start_param))
@@ -84,7 +106,7 @@ def start(message):
             code = int(start_param.replace("anime_", ""))
             return open_anime_page(message, code)
 
-    # ❗ Oddiy /start → Ongoing Animelar ro‘yxati
+    # ⭐ Oddiy /start → Ongoing Animelar
     animes = list(db.animes.find({"status": "Ongoing"}).sort("code", 1))
 
     if not animes:
