@@ -17,9 +17,11 @@ def save_channel(message):
     try:
         chat = bot.get_chat(username)
 
-        print("CHAT OBJECT:", chat)
-        print("CHAT ID:", chat.id)
-        print("CHAT TYPE:", chat.type)
+        # ADMIN TEKSHIRUV
+        member = bot.get_chat_member(chat.id, bot.get_me().id)
+        if member.status not in ["administrator", "creator"]:
+            bot.send_message(message.chat.id, "❌ Bot kanalga admin qilinmagan!")
+            return
 
         if chat.type != "channel":
             bot.send_message(message.chat.id, "❌ Bu kanal emas. Faqat kanal qo‘shing.")
