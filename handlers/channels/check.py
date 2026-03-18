@@ -1,19 +1,12 @@
-import os
-import random
 from loader import bot, db
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+import os
 
-
-# ==========================
-#   Majburiy obuna oynasi
-# ==========================
 def subscription_menu(user_id, start_param="check"):
     channels = list(db.forced_channels.find())
-    random.shuffle(channels)
 
     kb = InlineKeyboardMarkup()
 
-    # Har bir kanal uchun URL tugma
     for ch in channels:
         kb.row(
             InlineKeyboardButton(
@@ -22,21 +15,18 @@ def subscription_menu(user_id, start_param="check"):
             )
         )
 
-    # Tekshirish tugmasi URL bo‘ladi
     bot_username = os.getenv("BOT_USERNAME")
+
     kb.row(
         InlineKeyboardButton(
             "✅ Tekshirish",
-            url=f"https://t.me/{bot_username}?start={start_param}"
+            callback_data="check_sub"
         )
     )
 
     return kb
 
 
-# ==========================
-#   Obunani tekshirish
-# ==========================
 @bot.callback_query_handler(func=lambda c: c.data == "check_sub")
 def check_subscription(call):
     user_id = call.from_user.id
@@ -45,7 +35,7 @@ def check_subscription(call):
     not_joined = []
 
     for ch in channels:
-        channel_id = ch["channel_id"]  # ⭐ ID orqali tekshiramiz
+        channel_id = ch["channel_id"]
 
         try:
             member = bot.get_chat_member(channel_id, user_id)
