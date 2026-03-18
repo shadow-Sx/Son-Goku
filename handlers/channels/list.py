@@ -7,20 +7,11 @@ def list_channels(call):
 
     if not channels:
         bot.send_message(call.message.chat.id, "📭 Kanallar ro‘yxati bo‘sh.")
-        bot.answer_callback_query(call.id)
         return
 
-    kb = InlineKeyboardMarkup()
-
+    text = "📢 <b>Majburiy obuna kanallari:</b>\n\n"
     for ch in channels:
-        kb.row(
-            InlineKeyboardButton(
-                f"{ch['title']} ({ch['username']})",
-                callback_data=f"del_{ch['username']}"
-            )
-        )
+        text += f"• {ch['title']} — {ch['username']}\n"
 
-    kb.row(InlineKeyboardButton("◀️ Orqaga", callback_data="channels"))
-
-    bot.send_message(call.message.chat.id, "📋 <b>Kanallar ro‘yxati</b>", reply_markup=kb)
+    bot.send_message(call.message.chat.id, text)
     bot.answer_callback_query(call.id)
