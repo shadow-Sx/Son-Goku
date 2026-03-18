@@ -2,9 +2,42 @@ import os
 from flask import Flask, request
 import telebot
 
+# ==========================
+#   LOADER
+# ==========================
 from loader import bot, db, ADMIN_ID, is_vip
-from admin_menu import admin_panel
+
+# ==========================
+#   HANDLERLARNI IMPORT QILISH
+#   (MUHIM: main.py dan OLDIN yuklanishi shart)
+# ==========================
+
+# ADMIN PANEL
+from handlers.admin_panel import menu as admin_menu
+
+# ANIME ADMIN BO‘LIMI
+from handlers.admin_anime import menu as anime_menu
+from handlers.admin_anime import add_anime
+from handlers.admin_anime import add_episode
+from handlers.admin_anime import list_anime
+from handlers.admin_anime import edit_anime
+
+# KANALLAR BO‘LIMI
+from handlers.channels import menu as channels_menu
+from handlers.channels import add as channels_add
+from handlers.channels import list as channels_list
+from handlers.channels import delete as channels_delete
+from handlers.channels import check as channels_check
+
+# VIP FOYDALANUVCHI BOSHQARUV
+from handlers.user_manage import menu as user_manage_menu
+from handlers.user_manage import add_vip
+from handlers.user_manage import delete_vip
+from handlers.user_manage import list_vip
+
+# ANIME SAHIFASI
 from handlers.anime_page import open_anime_page
+
 
 APP_URL = os.getenv("APP_URL")
 
@@ -94,6 +127,7 @@ def handle_start_param(message, start_param):
 @bot.message_handler(commands=["stop"])
 def stop(message):
     if message.from_user.id == ADMIN_ID:
+        from admin_menu import admin_panel
         bot.send_message(message.chat.id, "🛠 Admin panel", reply_markup=admin_panel())
     else:
         bot.send_message(message.chat.id, "❌ Bu buyruq faqat admin uchun.")
