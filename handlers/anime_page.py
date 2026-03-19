@@ -66,8 +66,8 @@ def build_episode_keyboard(code, page, current_ep=None):
     if row:
         kb.row(*row)
 
-    # Agar 12 yoki kam bo‘lsa → pastki tugmalar yo‘q
-    if total <= EPISODES_PER_PAGE:
+    # 12 yoki kam bo‘lsa → pastki tugma yo‘q
+    if total < EPISODES_PER_PAGE:
         return kb
 
     nav = []
@@ -104,6 +104,11 @@ def open_episode(call):
     code = int(code)
     ep_num = int(ep_num)
     page = int(page)
+
+    # Agar shu qismni bosgan bo‘lsa → alert
+    if call.data.endswith(f"_{ep_num}_{page}"):
+        bot.answer_callback_query(call.id, "Siz hozir shu qismni tomosha qilmoqdasiz", show_alert=True)
+        return
 
     anime = db.animes.find_one({"code": code})
     ep = db.episodes.find_one({"anime_code": code, "episode": ep_num})
