@@ -9,39 +9,37 @@ from loader import bot, db, ADMIN_ID, is_vip
 
 # ==========================
 #   HANDLERLARNI IMPORT QILISH
-#   (MUHIM: main.py dan OLDIN yuklanishi shart)
 # ==========================
 
 # ADMIN PANEL
 from handlers.admin_panel import menu as admin_menu
 
-# ANIME ADMIN BO‘LIMI
+# ANIME ADMIN
 from handlers.admin_anime import menu as anime_menu
 from handlers.admin_anime import add_anime
 from handlers.admin_anime import add_episode
 from handlers.admin_anime import list_anime
 from handlers.admin_anime import edit_anime
 
-# KANALLAR BO‘LIMI
+# KANALLAR
 from handlers.channels import menu as channels_menu
 from handlers.channels import add as channels_add
 from handlers.channels import list as channels_list
 from handlers.channels import delete as channels_delete
 from handlers.channels import check as channels_check
 
-# VIP FOYDALANUVCHI BOSHQARUV
+# VIP
 from handlers.user_manage import menu as user_manage_menu
 from handlers.user_manage import add_vip
 from handlers.user_manage import delete_vip
 from handlers.user_manage import list_vip
 
-# ANIME SAHIFASI
+# ANIME PAGE
 from handlers.anime_page import open_anime_page
 import handlers.anime_page
 
 
 APP_URL = os.getenv("APP_URL")
-
 app = Flask(__name__)
 
 
@@ -101,9 +99,19 @@ def handle_start_param(message, start_param):
 
     if start_param:
 
+        # ⭐ DEEP LINK: code_episode
+        if "_" in start_param:
+            try:
+                code, ep = start_param.split("_")
+                return open_episode_from_start(message, int(code), int(ep))
+            except:
+                pass
+
+        # Oddiy anime kodi
         if start_param.isdigit():
             return open_anime_page(message, int(start_param))
 
+        # anime_4 format
         if start_param.startswith("anime_"):
             code = int(start_param.replace("anime_", ""))
             return open_anime_page(message, code)
@@ -120,6 +128,32 @@ def handle_start_param(message, start_param):
         text += f"• {a['name']}\n"
 
     bot.send_message(message.chat.id, text)
+
+
+# ==========================
+#   DEEP LINK → QISMNI OCHISH
+# ==========================
+def open_episode_from_start(message, code, ep_num):
+    anime = db.animes.find_one({"code": code})
+    ep = db.episodes.find_one({"anime_code": code, "episode": ep_num})
+
+    if not anime or not ep:
+        bot.send_message(message.chat.id, "❌ Qism topilmadi.")
+        return
+
+    caption = f"<b>{anime['name']}</b>\n<i>{ep_num}-qism</i>"
+
+    # Pastida qismlar ro‘yxati bo‘ladi
+    from handlers.anime_page import build_episode_keyboard
+    kb = build_episode_keyboard(code, 1, current_ep=ep_num)
+
+    bot.send_video(
+        message.chat.id,
+        ep["video_file_id"],
+        caption=caption,
+        reply_markup=kb,
+        parse_mode="HTML"
+    )
 
 
 # ==========================
