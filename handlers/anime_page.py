@@ -48,7 +48,13 @@ def open_anime_page(message, code):
 # ==========================
 @bot.callback_query_handler(func=lambda c: c.data.startswith("open_eps_"))
 def open_episodes(call):
-    _, code, page = call.data.split("_")
+    parts = call.data.split("_")
+
+    # open_eps_code_page → ["open", "eps", "4", "1"]
+    if len(parts) < 4:
+        return
+
+    _, _, code, page = parts
     code = int(code)
     page = int(page)
 
@@ -86,7 +92,7 @@ def open_episodes(call):
     # Pastki tugmalar
     nav_row = []
 
-    # 🔙 Orqaga (oldingi sahifa)
+    # 🔙 Orqaga
     if page > 1:
         nav_row.append(
             InlineKeyboardButton("🔙 Orqaga", callback_data=f"open_eps_{code}_{page-1}")
@@ -97,7 +103,7 @@ def open_episodes(call):
         InlineKeyboardButton("❌ Yopish", callback_data=f"close_eps_{code}")
     )
 
-    # Keyingi 🔜 (keyingi sahifa)
+    # Keyingi 🔜
     if page < total_pages:
         nav_row.append(
             InlineKeyboardButton("Keyingi 🔜", callback_data=f"open_eps_{code}_{page+1}")
@@ -117,7 +123,13 @@ def open_episodes(call):
 # ==========================
 @bot.callback_query_handler(func=lambda c: c.data.startswith("ep_"))
 def open_episode(call):
-    _, code, ep_num = call.data.split("_")
+    parts = call.data.split("_")
+
+    # ep_code_episode → ["ep", "4", "7"]
+    if len(parts) < 3:
+        return
+
+    _, code, ep_num = parts
     code = int(code)
     ep_num = int(ep_num)
 
