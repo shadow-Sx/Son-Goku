@@ -2,6 +2,7 @@ from loader import bot, db
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 EPISODES_PER_PAGE = 12
+current_watching = {}  # {user_id: (code, ep_num)}
 
 
 # ==========================
@@ -23,9 +24,21 @@ def open_anime_page(message, code):
     kb.row(InlineKeyboardButton("📥 YUKLAB OLISH", callback_data=f"eps_{code}_1"))
 
     if anime["media_type"] == "video":
-        bot.send_video(message.chat.id, anime["media_file_id"], caption=caption, reply_markup=kb, parse_mode="HTML")
+        bot.send_video(
+            message.chat.id,
+            anime["media_file_id"],
+            caption=caption,
+            reply_markup=kb,
+            parse_mode="HTML"
+        )
     else:
-        bot.send_photo(message.chat.id, anime["media_file_id"], caption=caption, reply_markup=kb, parse_mode="HTML")
+        bot.send_photo(
+            message.chat.id,
+            anime["media_file_id"],
+            caption=caption,
+            reply_markup=kb,
+            parse_mode="HTML"
+        )
 
 
 # ==========================
@@ -46,7 +59,6 @@ def build_episode_keyboard(code, page, current_ep=None):
     for ep in page_eps:
         ep_num = ep["episode"]
 
-        # 💽 belgilash
         if current_ep == ep_num:
             text = f"💽 - {ep_num}"
         else:
@@ -66,7 +78,7 @@ def build_episode_keyboard(code, page, current_ep=None):
     if row:
         kb.row(*row)
 
-    # 12 yoki kam bo‘lsa → pastki tugma yo‘q
+    # 12 tadan kam bo‘lsa → pastki tugmalar yo‘q
     if total < EPISODES_PER_PAGE:
         return kb
 
@@ -85,13 +97,26 @@ def build_episode_keyboard(code, page, current_ep=None):
 
 @bot.callback_query_handler(func=lambda c: c.data.startswith("eps_"))
 def open_episodes(call):
-    _, code, page = call.data.split("_")
+    parts = call.data.split("_")
+    if len(parts) < 3:
+        bot.answer_callback_query(call.id)
+        return
+
+    _, code, page = parts
     code = int(code)
     page = int(page)
 
     kb = build_episode_keyboard(code, page)
 
-    bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id, reply_markup=kb)
+    try:
+        bot.edit_message_reply_markup(
+            call.message.chat.id,
+            call.message.message_id,
+            reply_markup=kb
+        )
+    except:
+        pass
+
     bot.answer_callback_query(call.id)
 
 
@@ -100,18 +125,27 @@ def open_episodes(call):
 # ==========================
 @bot.callback_query_handler(func=lambda c: c.data.startswith("ep_"))
 def open_episode(call):
-    _, code, ep_num, page = call.data.split("_")
+    parts = call.data.split("_")
+    if len(parts) < 4:
+        bot.answer_callback_query(call.id)
+        return
+
+    _, code, ep_num, page = parts
     code = int(code)
     ep_num = int(ep_num)
     page = int(page)
 
-    # Agar shu qismni bosgan bo‘lsa → alert
-    if call.data.endswith(f"_{ep_num}_{page}"):
+    # Agar foydalanuvchi aynan shu qismni hozir ko‘rayotgan bo‘lsa
+    if current_watching.get(call.from_user.id) == (code, ep_num):
         bot.answer_callback_query(call.id, "Siz hozir shu qismni tomosha qilmoqdasiz", show_alert=True)
         return
 
     anime = db.animes.find_one({"code": code})
     ep = db.episodes.find_one({"anime_code": code, "episode": ep_num})
+
+    if not anime or not ep:
+        bot.answer_callback_query(call.id, "❌ Qism topilmadi!", show_alert=True)
+        return
 
     caption = (
         f"<b>{anime['name']}</b>\n"
@@ -120,12 +154,24 @@ def open_episode(call):
 
     kb = build_episode_keyboard(code, page, current_ep=ep_num)
 
-    bot.send_video(call.message.chat.id, ep["video_file_id"], caption=caption, reply_markup=kb, parse_mode="HTML")
+    bot.send_video(
+        call.message.chat.id,
+        ep["video_file_id"],
+        caption=caption,
+        reply_markup=kb,
+        parse_mode="HTML"
+    )
 
     try:
-        bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id, reply_markup=None)
+        bot.edit_message_reply_markup(
+            call.message.chat.id,
+            call.message.message_id,
+            reply_markup=None
+        )
     except:
         pass
+
+    current_watching[call.from_user.id] = (code, ep_num)
 
     bot.answer_callback_query(call.id)
 
@@ -135,7 +181,16 @@ def open_episode(call):
 # ==========================
 @bot.callback_query_handler(func=lambda c: c.data.startswith("close_eps_"))
 def close_episodes(call):
-    code = int(call.data.replace("close_eps_", ""))
-    bot.delete_message(call.message.chat.id, call.message.message_id)
+    try:
+        code = int(call.data.replace("close_eps_", ""))
+    except:
+        bot.answer_callback_query(call.id)
+        return
+
+    try:
+        bot.delete_message(call.message.chat.id, call.message.message_id)
+    except:
+        pass
+
     open_anime_page(call.message, code)
     bot.answer_callback_query(call.id)
