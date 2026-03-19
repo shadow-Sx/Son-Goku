@@ -1,6 +1,10 @@
 from loader import bot, db
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
+
+# ==========================
+#   ANIME SAHIFASI
+# ==========================
 def open_anime_page(message, code):
     anime = db.animes.find_one({"code": code})
 
@@ -8,25 +12,21 @@ def open_anime_page(message, code):
         bot.send_message(message.chat.id, "❌ Bunday anime topilmadi.")
         return
 
-    kb = InlineKeyboardMarkup()
-    kb.row(
-        InlineKeyboardButton("📥 YUKLAB OLISH", callback_data=f"open_eps_{code}")
-    )
-
     caption = (
         f"<b>{anime['name']}</b>\n\n"
         f"{anime['info']}\n\n"
         f"👁 1.2K  |  @{bot.get_me().username}"
     )
 
-    # ⭐ TO‘G‘RI MAYDON NOMLARI
-    media_type = anime["media_type"]
-    file_id = anime["media_file_id"]
+    kb = InlineKeyboardMarkup()
+    kb.row(
+        InlineKeyboardButton("📥 YUKLAB OLISH", callback_data=f"open_eps_{code}")
+    )
 
-    if media_type == "video":
+    if anime["media_type"] == "video":
         bot.send_video(
             message.chat.id,
-            file_id,
+            anime["media_file_id"],
             caption=caption,
             reply_markup=kb,
             parse_mode="HTML"
@@ -34,8 +34,38 @@ def open_anime_page(message, code):
     else:
         bot.send_photo(
             message.chat.id,
-            file_id,
+            anime["media_file_id"],
             caption=caption,
             reply_markup=kb,
             parse_mode="HTML"
         )
+
+
+# ==========================
+#   QISMLAR BO‘LIMI
+# ==========================
+@bot.callback_query_handler(func=lambda c: c.data.startswith("open_eps_"))
+def open_episodes(call):
+    code = int(call.data.replace("open_eps_", ""))
+
+    eps = list(db.episodes.find({"anime_code": code}).sort("episode", 1))
+
+    if not eps:
+        bot.answer_callback_query(call.id, "❌ Hali qismlar qo‘shilmagan!", show_alert=True)
+        return
+
+    kb = InlineKeyboardMarkup()
+
+    for ep in eps:
+        kb.row(
+            InlineKeyboardButton(
+                f"📺 {ep['episode']}-qism",
+                callback_data=f"ep_{code}_{ep['episode']}"
+            )
+        )
+
+    bot.edit_message_reply_markup(
+        call.message.chat.id,
+        call.message.message_id,
+        reply_markup=kb
+    )
