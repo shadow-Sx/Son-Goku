@@ -37,6 +37,7 @@ from handlers.user_manage import list_vip
 
 # ANIME SAHIFASI
 from handlers.anime_page import open_anime_page
+import handlers.anime_page
 
 
 APP_URL = os.getenv("APP_URL")
