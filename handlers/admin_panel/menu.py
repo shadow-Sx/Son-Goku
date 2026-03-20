@@ -75,7 +75,7 @@ def open_user_manage(call):
 #   FAOL BO‘LMAGAN TUGMALAR
 # ==========================
 @bot.callback_query_handler(func=lambda c: c.data in [
-    "settings", "stats", "broadcast", "post", "wallets",
+    "settings", "stats", "broadcast", "wallets",
     "buttons", "texts", "admins", "bot_status"
 ])
 def not_ready(call):
