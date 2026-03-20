@@ -1,4 +1,5 @@
 import os
+import time
 from flask import Flask, request
 import telebot
 
@@ -160,7 +161,7 @@ def open_episode_from_start(message, code, ep_num):
 @bot.message_handler(commands=["stop"])
 def stop(message):
     if message.from_user.id in ADMINS:
-        from admin_menu import admin_panel
+        from handlers.admin_panel import admin_panel
         bot.send_message(message.chat.id, "🛠 Admin panel", reply_markup=admin_panel())
     else:
         bot.send_message(message.chat.id, "❌ Bu buyruq faqat admin uchun.")
@@ -176,13 +177,15 @@ def index():
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    update = telebot.types.Update.de_json(request.data.decode("utf-8"))
+    json_str = request.get_data().decode("utf-8")
+    update = telebot.types.Update.de_json(json_str)
     bot.process_new_updates([update])
     return "OK", 200
 
 
 def set_webhook():
     bot.remove_webhook()
+    time.sleep(1)
     bot.set_webhook(url=f"{APP_URL}/webhook")
     print("WEBHOOK SET:", f"{APP_URL}/webhook")
 
