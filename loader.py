@@ -1,50 +1,47 @@
 import os
-from telebot import TeleBot
+import telebot
 from pymongo import MongoClient
 
 # ==========================
-#   ENVIRONMENT
+#   TOKEN
 # ==========================
+BOT_TOKEN = os.environ.get("BOT_TOKEN")
+if not BOT_TOKEN:
+    raise Exception("❌ BOT_TOKEN environment variable topilmadi!")
 
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-APP_URL = os.getenv("APP_URL")  # Render URL: https://your-app.onrender.com
-MONGO_URL = os.getenv("MONGO_URL")
-DB_NAME = os.getenv("DB_NAME", "anime_bot")
-
-# Bir nechta admin ID
-# Masalan: "123456789,987654321"
-ADMINS_ENV = os.getenv("ADMINS", "")
-if ADMINS_ENV.strip():
-    ADMINS = [int(x) for x in ADMINS_ENV.split(",") if x.strip().isdigit()]
-else:
-    ADMINS = []  # agar env bo'lmasa, keyin qo'lda to'ldirasan
-
-# ==========================
-#   TELEGRAM BOT
-# ==========================
-
-bot = TeleBot(BOT_TOKEN, parse_mode="HTML")
-
-# ==========================
-#   DATABASE
-# ==========================
-
-mongo_client = MongoClient(MONGO_URL)
-db = mongo_client[DB_NAME]
+bot = telebot.TeleBot(BOT_TOKEN, parse_mode="HTML")
 
 
 # ==========================
-#   HELPERS
+#   APP_URL (Render URL)
 # ==========================
+APP_URL = os.environ.get("APP_URL")
+if not APP_URL:
+    raise Exception("❌ APP_URL environment variable topilmadi!")
 
-def is_admin(user_id: int) -> bool:
-    return user_id in ADMINS
+
+# ==========================
+#   MONGO DB
+# ==========================
+MONGO_URI = os.environ.get("MONGO_URI")
+if not MONGO_URI:
+    raise Exception("❌ MONGO_URI environment variable topilmadi!")
+
+client = MongoClient(MONGO_URI)
+db = client["anime_bot"]
 
 
+# ==========================
+#   ADMINLAR
+# ==========================
+ADMINS = [
+    123456789,   # o'zingning ID'ingni qo'y
+    # boshqa adminlar bo'lsa qo'sh
+]
+
+
+# ==========================
+#   VIP TEKSHIRISH
+# ==========================
 def is_vip(user_id: int) -> bool:
-    """
-    VIP foydalanuvchini tekshirish.
-    db.vip_users kolleksiyasida saqlanadi deb faraz qilamiz:
-    { "user_id": 123456789 }
-    """
     return db.vip_users.find_one({"user_id": user_id}) is not None
