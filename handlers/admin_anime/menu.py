@@ -1,5 +1,5 @@
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
-from loader import bot, ADMIN_ID
+from loader import bot, ADMINS
 from handlers.admin_panel.menu import big_admin_menu
 
 def anime_menu():
