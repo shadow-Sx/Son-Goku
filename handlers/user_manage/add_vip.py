@@ -1,10 +1,10 @@
-from loader import bot, db, ADMIN_ID
+from loader import bot, db, ADMINS
 
 waiting_vip = {}
 
 @bot.callback_query_handler(func=lambda c: c.data == "vip_add")
 def ask_vip(call):
-    if call.from_user.id != ADMIN_ID:
+    if call.from_user.id != ADMINS:
         return
 
     bot.send_message(call.message.chat.id, "➕ VIP qilish uchun foydalanuvchi ID sini yuboring:")
