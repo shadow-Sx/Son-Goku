@@ -1,4 +1,4 @@
-from main import bot, ADMINS, db
+from main import bot, is_admin, db
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 edit_temp = {}
