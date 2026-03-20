@@ -3,7 +3,7 @@ import time
 from flask import Flask, request
 import telebot
 
-from loader import bot, db, is_admin, is_vip, ADMINS, APP_URL
+from loader import bot, db, is_admin, is_vip, check_vip_expiration, APP_URL
 from admin_menu import admin_panel  # reply keyboard
 
 app = Flask(__name__)
@@ -15,12 +15,32 @@ app = Flask(__name__)
 @bot.message_handler(commands=["start"])
 def start(message):
     user_id = message.from_user.id
-    print("START HANDLER WORKING, USER:", user_id)
+    chat_id = message.chat.id
 
-    # Admin bo‘lsa — boshqarish tugmasi chiqadi
+    # Foydalanuvchini DB ga yozib qo'yamiz
+    db.users.update_one(
+        {"user_id": user_id},
+        {
+            "$set": {
+                "user_id": user_id,
+                "full_name": message.from_user.full_name,
+                "username": message.from_user.username,
+                "updated_at": int(time.time())
+            },
+            "$setOnInsert": {
+                "created_at": int(time.time())
+            }
+        },
+        upsert=True
+    )
+
+    # VIP muddatini tekshirish (10 kun qolganda eslatma)
+    check_vip_expiration(user_id)
+
+    # Admin bo‘lsa — admin panel
     if is_admin(user_id):
         bot.send_message(
-            message.chat.id,
+            chat_id,
             "🛠 Admin panel",
             reply_markup=admin_panel()
         )
@@ -28,11 +48,17 @@ def start(message):
 
     # VIP bo‘lsa
     if is_vip(user_id):
-        bot.send_message(message.chat.id, "👑 VIP foydalanuvchi, hush kelibsiz!")
+        bot.send_message(
+            chat_id,
+            "👑 Siz VIP foydalanuvchisiz. Botdan bemalol foydalanishingiz mumkin."
+        )
         return
 
     # Oddiy foydalanuvchi
-    bot.send_message(message.chat.id, "Assalomu alaykum! Ongoing animelarni ko‘rishingiz mumkin.")
+    bot.send_message(
+        chat_id,
+        "Assalomu alaykum!\nOngoing animelarni ko‘rishingiz mumkin."
+    )
 
 
 # ==========================
@@ -41,7 +67,11 @@ def start(message):
 @bot.message_handler(commands=["stop"])
 def stop(message):
     if is_admin(message.from_user.id):
-        bot.send_message(message.chat.id, "🛠 Admin panel", reply_markup=admin_panel())
+        bot.send_message(
+            message.chat.id,
+            "🛠 Admin panel",
+            reply_markup=admin_panel()
+        )
     else:
         bot.send_message(message.chat.id, "❌ Bu buyruq faqat adminlar uchun.")
 
@@ -72,24 +102,20 @@ def set_webhook():
 # ==========================
 #   HANDLERLARNI IMPORT QILISH
 # ==========================
-# Muhim: bularni bot va app e’lon qilingandan KEYIN import qilamiz
+import anime_page
 
-# Anime sahifasi va callbacklari
-import anime_page  # open_anime_page, build_episode_keyboard va callbacklar
-
-# Admin panel (inline)
 from handlers.admin_panel import menu as admin_panel_menu
 
-# Admin anime bo‘limi
 from handlers.admin_anime import (
     add_anime,
     add_episode,
     edit_anime,
     list_anime,
     menu as anime_menu,
+    delete_anime,
+    clear_episodes,
 )
 
-# Kanallar bo‘limi
 from handlers.channels import (
     add as ch_add,
     delete as ch_delete,
@@ -98,16 +124,12 @@ from handlers.channels import (
     menu as ch_menu,
 )
 
-# Foydalanuvchilarni boshqarish
 from handlers.user_manage import (
     add_vip,
     delete_vip,
     list_vip,
     menu as user_menu,
 )
-
-# Agar qo‘shimcha fayllar (delete_anime.py, clear_episodes.py) bo‘lsa, ularni ham shu yerda import qilasan:
-# from handlers.admin_anime import delete_anime, clear_episodes
 
 
 # ==========================
