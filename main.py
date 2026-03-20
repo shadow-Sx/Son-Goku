@@ -38,7 +38,7 @@ def start(message):
 
     # Admin bo‘lsa — admin panel
     if is_admin(user_id):
-        from admin_menu import admin_panel
+        from handlers.admin_panel.menu import admin_panel
         bot.send_message(chat_id, "🛠 Admin panel", reply_markup=admin_panel())
         return
 
@@ -57,7 +57,7 @@ def start(message):
 @bot.message_handler(commands=["stop"])
 def stop(message):
     if is_admin(message.from_user.id):
-        from admin_menu import admin_panel
+        from handlers.admin_panel.menu import admin_panel
         bot.send_message(message.chat.id, "🛠 Admin panel", reply_markup=admin_panel())
     else:
         bot.send_message(message.chat.id, "❌ Bu buyruq faqat adminlar uchun.")
