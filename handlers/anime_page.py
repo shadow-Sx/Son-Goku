@@ -1,8 +1,33 @@
-from loader import bot, db
+from loader import bot, db, is_admin
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+
+# Majburiy obuna tekshiruvi
+from handlers.channels.check import subscription_menu
+from loader import bot, db
 
 EPISODES_PER_PAGE = 12
 current_watching = {}  # {user_id: (code, ep_num)}
+
+
+# ==========================
+#   OBUNA TEKSHIRISH
+# ==========================
+def check_subscription(user_id):
+    channels = list(db.forced_channels.find())
+    if not channels:
+        return True
+
+    for ch in channels:
+        try:
+            member = bot.get_chat_member(ch["channel_id"], user_id)
+            if member.status in ["member", "administrator", "creator"]:
+                continue
+            else:
+                return False
+        except:
+            return False
+
+    return True
 
 
 # ==========================
@@ -21,7 +46,7 @@ def open_anime_page(message, code):
     )
 
     kb = InlineKeyboardMarkup()
-    kb.row(InlineKeyboardButton("📥 YUKLAB OLISH", callback_data=f"eps_{code}_1"))
+    kb.row(InlineKeyboardButton("📥 QISMLAR", callback_data=f"eps_{code}_1"))
 
     if anime["media_type"] == "video":
         bot.send_video(
@@ -95,14 +120,24 @@ def build_episode_keyboard(code, page, current_ep=None):
     return kb
 
 
+# ==========================
+#   SAHIFALASH CALLBACK
+# ==========================
 @bot.callback_query_handler(func=lambda c: c.data.startswith("eps_"))
 def open_episodes(call):
-    parts = call.data.split("_")
-    if len(parts) < 3:
+    user_id = call.from_user.id
+
+    # Majburiy obuna tekshiruvi
+    if not check_subscription(user_id):
         bot.answer_callback_query(call.id)
+        bot.send_message(
+            call.message.chat.id,
+            "📢 Botdan foydalanish uchun kanallarga obuna bo‘ling:",
+            reply_markup=subscription_menu(user_id, None)
+        )
         return
 
-    _, code, page = parts
+    _, code, page = call.data.split("_")
     code = int(code)
     page = int(page)
 
@@ -121,22 +156,29 @@ def open_episodes(call):
 
 
 # ==========================
-#   QISMNI OCHISH (VIDEO + belgilash)
+#   QISMNI OCHISH
 # ==========================
 @bot.callback_query_handler(func=lambda c: c.data.startswith("ep_"))
 def open_episode(call):
-    parts = call.data.split("_")
-    if len(parts) < 4:
+    user_id = call.from_user.id
+
+    # Majburiy obuna tekshiruvi
+    if not check_subscription(user_id):
         bot.answer_callback_query(call.id)
+        bot.send_message(
+            call.message.chat.id,
+            "📢 Botdan foydalanish uchun kanallarga obuna bo‘ling:",
+            reply_markup=subscription_menu(user_id, None)
+        )
         return
 
-    _, code, ep_num, page = parts
+    _, code, ep_num, page = call.data.split("_")
     code = int(code)
     ep_num = int(ep_num)
     page = int(page)
 
     # Agar foydalanuvchi aynan shu qismni hozir ko‘rayotgan bo‘lsa
-    if current_watching.get(call.from_user.id) == (code, ep_num):
+    if current_watching.get(user_id) == (code, ep_num):
         bot.answer_callback_query(call.id, "Siz hozir shu qismni tomosha qilmoqdasiz", show_alert=True)
         return
 
@@ -162,6 +204,7 @@ def open_episode(call):
         parse_mode="HTML"
     )
 
+    # Eski tugmalarni o‘chiramiz
     try:
         bot.edit_message_reply_markup(
             call.message.chat.id,
@@ -171,7 +214,8 @@ def open_episode(call):
     except:
         pass
 
-    current_watching[call.from_user.id] = (code, ep_num)
+    # Hozir ko‘rayotgan qismni saqlaymiz
+    current_watching[user_id] = (code, ep_num)
 
     bot.answer_callback_query(call.id)
 
@@ -181,11 +225,19 @@ def open_episode(call):
 # ==========================
 @bot.callback_query_handler(func=lambda c: c.data.startswith("close_eps_"))
 def close_episodes(call):
-    try:
-        code = int(call.data.replace("close_eps_", ""))
-    except:
+    user_id = call.from_user.id
+
+    # Majburiy obuna tekshiruvi
+    if not check_subscription(user_id):
         bot.answer_callback_query(call.id)
+        bot.send_message(
+            call.message.chat.id,
+            "📢 Botdan foydalanish uchun kanallarga obuna bo‘ling:",
+            reply_markup=subscription_menu(user_id, None)
+        )
         return
+
+    code = int(call.data.replace("close_eps_", ""))
 
     try:
         bot.delete_message(call.message.chat.id, call.message.message_id)
