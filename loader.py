@@ -32,28 +32,28 @@ db = client["anime_bot"]
 
 
 # ==========================
-#   ADMINS (Environment orqali)
+#   ADMINS (string sifatida)
 # ==========================
-ADMINS_ENV = os.environ.get("ADMINS", "")
+ADMINS_ENV = os.environ.get("ADMINS", "").strip()
 
-# Masalan: "12345,67890"
-if ADMINS_ENV.strip():
-    ADMINS = [int(x) for x in ADMINS_ENV.split(",") if x.strip().isdigit()]
+if ADMINS_ENV:
+    # "7797592113, 7206418056" → ["7797592113", "7206418056"]
+    ADMINS = [x.strip() for x in ADMINS_ENV.split(",") if x.strip()]
 else:
     ADMINS = []
 
-print("ADMINS:", ADMINS)
+print("ADMINS LOADED:", ADMINS)
 
 
 # ==========================
 #   VIP TEKSHIRISH
 # ==========================
-def is_vip(user_id: int) -> bool:
+def is_vip(user_id):
     return db.vip_users.find_one({"user_id": user_id}) is not None
 
 
 # ==========================
-#   ADMIN TEKSHIRISH
+#   ADMIN TEKSHIRISH (string solishtirish)
 # ==========================
 def is_admin(user_id):
-    return str(user_id) in [str(x) for x in ADMINS]
+    return str(user_id) in ADMINS
