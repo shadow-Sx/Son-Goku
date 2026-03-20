@@ -1,4 +1,4 @@
-from loader import bot, db, is_admin
+from loader import bot, db,
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 # Majburiy obuna tekshiruvi
