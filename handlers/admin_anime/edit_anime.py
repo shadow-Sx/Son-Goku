@@ -1,4 +1,4 @@
-from main import bot, is_admin, db
+from loader import bot, db, is_admin
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 edit_temp = {}
@@ -9,12 +9,15 @@ edit_temp = {}
 # ==========================
 @bot.callback_query_handler(func=lambda c: c.data == "anime_edit")
 def edit_anime_start(call):
-    if call.from_user.id != ADMINS:
+    if not is_admin(call.from_user.id):
         return
 
     edit_temp[call.from_user.id] = {"step": 1}
 
-    bot.send_message(call.message.chat.id, "✏️ Tahrirlash\n\nTahrirlamoqchi bo‘lgan Anime kodini kiriting:")
+    bot.send_message(
+        call.message.chat.id,
+        "✏️ <b>Tahrirlash</b>\n\nTahrirlamoqchi bo‘lgan Anime kodini kiriting:"
+    )
     bot.answer_callback_query(call.id)
 
 
@@ -58,7 +61,7 @@ def edit_anime_code(message):
 @bot.callback_query_handler(func=lambda c: c.data == "edit_name")
 def edit_name_start(call):
     uid = call.from_user.id
-    if uid != ADMIN_ID:
+    if not is_admin(uid):
         return
 
     edit_temp[uid]["step"] = "edit_name"
@@ -87,6 +90,9 @@ def edit_name_save(message):
 @bot.callback_query_handler(func=lambda c: c.data == "edit_info")
 def edit_info_start(call):
     uid = call.from_user.id
+    if not is_admin(uid):
+        return
+
     edit_temp[uid]["step"] = "edit_info"
 
     bot.send_message(call.message.chat.id, "🧾 Yangi izohni kiriting:")
@@ -113,8 +119,10 @@ def edit_info_save(message):
 @bot.callback_query_handler(func=lambda c: c.data == "edit_status")
 def edit_status_start(call):
     uid = call.from_user.id
-    code = edit_temp[uid]["code"]
+    if not is_admin(uid):
+        return
 
+    code = edit_temp[uid]["code"]
     anime = db.animes.find_one({"code": code})
 
     kb = InlineKeyboardMarkup()
@@ -134,6 +142,9 @@ def edit_status_start(call):
 @bot.callback_query_handler(func=lambda c: c.data in ["status_done", "status_ongoing"])
 def edit_status_save(call):
     uid = call.from_user.id
+    if not is_admin(uid):
+        return
+
     new_status = "Tugallangan" if call.data == "status_done" else "Ongoing"
 
     db.animes.update_one(
@@ -153,6 +164,9 @@ def edit_status_save(call):
 @bot.callback_query_handler(func=lambda c: c.data == "edit_episode")
 def edit_episode_start(call):
     uid = call.from_user.id
+    if not is_admin(uid):
+        return
+
     edit_temp[uid]["step"] = "episode_number"
 
     bot.send_message(call.message.chat.id, "🎞 Qaysi qismni tahrirlamoqchisiz? Raqamni yuboring:")
@@ -165,6 +179,7 @@ def edit_episode_start(call):
 @bot.message_handler(func=lambda m: edit_temp.get(m.from_user.id, {}).get("step") == "episode_number")
 def edit_episode_number(message):
     uid = message.from_user.id
+
     if not message.text.isdigit():
         bot.send_message(message.chat.id, "❌ Qism raqami faqat raqam bo‘lishi kerak.")
         return
@@ -187,12 +202,16 @@ def edit_episode_number(message):
 
     bot.send_message(message.chat.id, "Qism bo‘limini tanlang:", reply_markup=kb)
 
+
 # ==========================
 #   8) Qism — Nom qo‘shish
 # ==========================
 @bot.callback_query_handler(func=lambda c: c.data == "ep_name")
 def edit_episode_name_start(call):
     uid = call.from_user.id
+    if not is_admin(uid):
+        return
+
     edit_temp[uid]["step"] = "ep_name"
 
     bot.send_message(call.message.chat.id, "📝 Yangi nomni kiriting:")
@@ -214,18 +233,22 @@ def edit_episode_name_save(message):
 
     bot.send_message(message.chat.id, "✅ Qism nomi yangilandi!")
 
+
 # ==========================
 #   9) Qism — O‘chirish
 # ==========================
 @bot.callback_query_handler(func=lambda c: c.data == "ep_delete")
 def edit_episode_delete(call):
     uid = call.from_user.id
+    if not is_admin(uid):
+        return
+
     code = edit_temp[uid]["code"]
     episode = edit_temp[uid]["episode"]
 
     db.episodes.delete_one({"anime_code": code, "episode": episode})
 
-    # Qolgan qismlarni tartiblab chiqamiz (1,2,3,5 → 1,2,3,4)
+    # Qolgan qismlarni tartiblab chiqamiz
     episodes = list(db.episodes.find({"anime_code": code}).sort("episode", 1))
 
     new_num = 1
@@ -241,12 +264,16 @@ def edit_episode_delete(call):
     bot.send_message(call.message.chat.id, "🗑 Qism o‘chirildi va tartib qayta tiklandi!")
     bot.answer_callback_query(call.id)
 
+
 # ==========================
 #   10) Qism — Videoni almashtirish
 # ==========================
 @bot.callback_query_handler(func=lambda c: c.data == "ep_video")
 def edit_episode_video_start(call):
     uid = call.from_user.id
+    if not is_admin(uid):
+        return
+
     edit_temp[uid]["step"] = "ep_video"
 
     bot.send_message(call.message.chat.id, "🎥 Yangi videoni yuboring:")
