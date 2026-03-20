@@ -55,5 +55,5 @@ def is_vip(user_id: int) -> bool:
 # ==========================
 #   ADMIN TEKSHIRISH
 # ==========================
-def is_admin(user_id: int) -> bool:
-    return user_id in ADMINS
+def is_admin(user_id):
+    return str(user_id) in [str(x) for x in ADMINS]
