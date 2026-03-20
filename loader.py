@@ -1,59 +1,44 @@
 import os
-import telebot
 from pymongo import MongoClient
+import telebot
 
 # ==========================
-#   TOKEN
+#   CONFIG
 # ==========================
-BOT_TOKEN = os.environ.get("BOT_TOKEN")
-if not BOT_TOKEN:
-    raise Exception("❌ BOT_TOKEN environment variable topilmadi!")
+
+# .env yoki config.py dan moslab olasan
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
+DB_NAME = os.getenv("DB_NAME", "anime_bot")
+APP_URL = os.getenv("APP_URL")  # masalan: https://son-goku-4c47.onrender.com
+
+# Adminlar ro‘yxati (string ko‘rinishida saqlash qulay)
+# Masalan: "7797502113,7026418050"
+ADMINS_RAW = os.getenv("ADMINS", "")
+ADMINS = [x.strip() for x in ADMINS_RAW.split(",") if x.strip()]
+
+# VIP foydalanuvchilar (ixtiyoriy)
+VIP_RAW = os.getenv("VIP_USERS", "")
+VIP_USERS = [x.strip() for x in VIP_RAW.split(",") if x.strip()]
+
+
+# ==========================
+#   BOT VA DB
+# ==========================
 
 bot = telebot.TeleBot(BOT_TOKEN, parse_mode="HTML")
 
-
-# ==========================
-#   APP_URL (Render URL)
-# ==========================
-APP_URL = os.environ.get("APP_URL")
-if not APP_URL:
-    raise Exception("❌ APP_URL environment variable topilmadi!")
-
-
-# ==========================
-#   MONGO DB
-# ==========================
-MONGO_URI = os.environ.get("MONGO_URI")
-if not MONGO_URI:
-    raise Exception("❌ MONGO_URI environment variable topilmadi!")
-
 client = MongoClient(MONGO_URI)
-db = client["anime_bot"]
+db = client[DB_NAME]
 
 
 # ==========================
-#   ADMINS (string sifatida)
+#   FOYDALANUVCHI TEKSHIRUV FUNKSIYALARI
 # ==========================
-ADMINS_ENV = os.environ.get("ADMINS", "").strip()
 
-if ADMINS_ENV:
-    # "7797592113, 7206418056" → ["7797592113", "7206418056"]
-    ADMINS = [x.strip() for x in ADMINS_ENV.split(",") if x.strip()]
-else:
-    ADMINS = []
-
-print("ADMINS LOADED:", ADMINS)
-
-
-# ==========================
-#   VIP TEKSHIRISH
-# ==========================
-def is_vip(user_id):
-    return db.vip_users.find_one({"user_id": user_id}) is not None
-
-
-# ==========================
-#   ADMIN TEKSHIRISH (string solishtirish)
-# ==========================
-def is_admin(user_id):
+def is_admin(user_id: int) -> bool:
     return str(user_id) in ADMINS
+
+
+def is_vip(user_id: int) -> bool:
+    return str(user_id) in VIP_USERS
