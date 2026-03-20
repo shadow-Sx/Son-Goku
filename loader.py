@@ -1,16 +1,50 @@
 import os
-import telebot
+from telebot import TeleBot
 from pymongo import MongoClient
 
-TOKEN = os.getenv("BOT_TOKEN")
-MONGO_URI = os.getenv("MONGO_URI")
-ADMIN_ID = int(os.getenv("ADMIN_ID", "7026418050"))
+# ==========================
+#   ENVIRONMENT
+# ==========================
 
-bot = telebot.TeleBot(TOKEN, parse_mode="HTML")
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+APP_URL = os.getenv("APP_URL")  # Render URL: https://your-app.onrender.com
+MONGO_URL = os.getenv("MONGO_URL")
+DB_NAME = os.getenv("DB_NAME", "anime_bot")
 
-mongo = MongoClient(MONGO_URI)
-db = mongo["anime_bot"]
+# Bir nechta admin ID
+# Masalan: "123456789,987654321"
+ADMINS_ENV = os.getenv("ADMINS", "")
+if ADMINS_ENV.strip():
+    ADMINS = [int(x) for x in ADMINS_ENV.split(",") if x.strip().isdigit()]
+else:
+    ADMINS = []  # agar env bo'lmasa, keyin qo'lda to'ldirasan
 
-# ⭐ VIP tekshirish funksiyasi
-def is_vip(user_id):
+# ==========================
+#   TELEGRAM BOT
+# ==========================
+
+bot = TeleBot(BOT_TOKEN, parse_mode="HTML")
+
+# ==========================
+#   DATABASE
+# ==========================
+
+mongo_client = MongoClient(MONGO_URL)
+db = mongo_client[DB_NAME]
+
+
+# ==========================
+#   HELPERS
+# ==========================
+
+def is_admin(user_id: int) -> bool:
+    return user_id in ADMINS
+
+
+def is_vip(user_id: int) -> bool:
+    """
+    VIP foydalanuvchini tekshirish.
+    db.vip_users kolleksiyasida saqlanadi deb faraz qilamiz:
+    { "user_id": 123456789 }
+    """
     return db.vip_users.find_one({"user_id": user_id}) is not None
