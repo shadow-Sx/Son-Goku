@@ -32,13 +32,17 @@ db = client["anime_bot"]
 
 
 # ==========================
-#   ADMINLAR
+#   ADMINS (Environment orqali)
 # ==========================
-ADMINS = [
-    7026418050,
-    7797502113   # o'zingning ID'ingni qo'y
-    # boshqa adminlar bo'lsa qo'sh
-]
+ADMINS_ENV = os.environ.get("ADMINS", "")
+
+# Masalan: "12345,67890"
+if ADMINS_ENV.strip():
+    ADMINS = [int(x) for x in ADMINS_ENV.split(",") if x.strip().isdigit()]
+else:
+    ADMINS = []
+
+print("ADMINS:", ADMINS)
 
 
 # ==========================
@@ -46,3 +50,10 @@ ADMINS = [
 # ==========================
 def is_vip(user_id: int) -> bool:
     return db.vip_users.find_one({"user_id": user_id}) is not None
+
+
+# ==========================
+#   ADMIN TEKSHIRISH
+# ==========================
+def is_admin(user_id: int) -> bool:
+    return user_id in ADMINS
