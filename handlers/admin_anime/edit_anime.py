@@ -43,12 +43,12 @@ def edit_anime_code(message):
     }
 
     kb = InlineKeyboardMarkup()
-kb.row(InlineKeyboardButton("📝 Anime nomi", callback_data="edit_name"))
-kb.row(InlineKeyboardButton("🧾 Izoh", callback_data="edit_info"))
-kb.row(InlineKeyboardButton("🔄 Holati", callback_data="edit_status"))
-kb.row(InlineKeyboardButton("🎞 Qism", callback_data="edit_episode"))
-kb.row(InlineKeyboardButton("🗑 Anime o‘chirish", callback_data="edit_delete"))
-kb.row(InlineKeyboardButton("🧹 Qismlarni tozalash", callback_data="edit_clear_eps"))
+    kb.row(InlineKeyboardButton("📝 Anime nomi", callback_data="edit_name"))
+    kb.row(InlineKeyboardButton("🧾 Izoh", callback_data="edit_info"))
+    kb.row(InlineKeyboardButton("🔄 Holati", callback_data="edit_status"))
+    kb.row(InlineKeyboardButton("🎞 Qism", callback_data="edit_episode"))
+    kb.row(InlineKeyboardButton("🗑 Anime o‘chirish", callback_data="edit_delete"))
+    kb.row(InlineKeyboardButton("🧹 Qismlarni tozalash", callback_data="edit_clear_eps"))
 
     bot.send_message(
         message.chat.id,
@@ -250,7 +250,6 @@ def edit_episode_delete(call):
 
     db.episodes.delete_one({"anime_code": code, "episode": episode})
 
-    # Qolgan qismlarni tartiblab chiqamiz
     episodes = list(db.episodes.find({"anime_code": code}).sort("episode", 1))
 
     new_num = 1
