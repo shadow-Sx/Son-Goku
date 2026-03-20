@@ -5,7 +5,7 @@ import telebot
 # ==========================
 #   LOADER
 # ==========================
-from loader import bot, db, ADMIN_ID, is_vip, APP_URL
+from loader import bot, db, ADMINS, is_vip, APP_URL
 
 
 # ==========================
@@ -60,7 +60,7 @@ def start(message):
     print("START PARAM:", start_param)
 
     # ADMIN → obuna tekshiruvi yo‘q
-    if user_id == ADMIN_ID:
+    if user_id in ADMINS:
         return handle_start_param(message, start_param)
 
     # VIP → obuna tekshiruvi yo‘q
@@ -159,7 +159,7 @@ def open_episode_from_start(message, code, ep_num):
 # ==========================
 @bot.message_handler(commands=["stop"])
 def stop(message):
-    if message.from_user.id == ADMIN_ID:
+    if message.from_user.id in ADMINS:
         from admin_menu import admin_panel
         bot.send_message(message.chat.id, "🛠 Admin panel", reply_markup=admin_panel())
     else:
