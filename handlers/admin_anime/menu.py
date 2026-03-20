@@ -1,7 +1,11 @@
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
-from loader import bot, ADMINS
+from loader import bot, is_admin
 from handlers.admin_panel.menu import big_admin_menu
 
+
+# ==========================
+#   ANIME MENYUSI
+# ==========================
 def anime_menu():
     kb = InlineKeyboardMarkup()
     kb.row(InlineKeyboardButton("➕ Anime qo‘shish", callback_data="anime_add"))
@@ -13,13 +17,33 @@ def anime_menu():
     return kb
 
 
+# ==========================
+#   🎥 Animelar sozlash bo‘limi
+# ==========================
 @bot.callback_query_handler(func=lambda c: c.data == "anime_menu")
 def open_anime_menu(call):
-    bot.send_message(call.message.chat.id, "🎥 <b>Animelar sozlash</b>", reply_markup=anime_menu())
+    if not is_admin(call.from_user.id):
+        return
+
+    bot.send_message(
+        call.message.chat.id,
+        "🎥 <b>Animelar sozlash</b>",
+        reply_markup=anime_menu()
+    )
     bot.answer_callback_query(call.id)
 
 
+# ==========================
+#   ◀️ Orqaga
+# ==========================
 @bot.callback_query_handler(func=lambda c: c.data == "anime_back")
 def back_to_admin(call):
-    bot.send_message(call.message.chat.id, "◀️ Orqaga qaytdingiz", reply_markup=big_admin_menu())
+    if not is_admin(call.from_user.id):
+        return
+
+    bot.send_message(
+        call.message.chat.id,
+        "◀️ Orqaga qaytdingiz",
+        reply_markup=big_admin_menu()
+    )
     bot.answer_callback_query(call.id)
