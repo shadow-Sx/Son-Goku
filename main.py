@@ -4,15 +4,34 @@ import telebot
 
 from loader import bot, db, APP_URL, is_admin, is_vip
 
-# HANDLERLAR
+# ==========================
+#   HANDLERLARNI YUKLASH
+# ==========================
+
+# Anime sahifasi va qism ochish
 from handlers.anime_page import open_anime_page, build_episode_keyboard
-from handlers.channels.check import subscription_menu  # majburiy obuna oynasi
+
+# Majburiy obuna oynasi
+from handlers.channels.check import subscription_menu
+
+# Admin panel (agar bo‘lsa)
+try:
+    from handlers.admin_panel import *
+except:
+    pass
+
+# Anime qo‘shish, epizod qo‘shish va boshqalar (agar bo‘lsa)
+try:
+    from handlers.admin_anime import *
+except:
+    pass
+
 
 app = Flask(__name__)
 
 
 # ==========================
-#   /start
+#   /start HANDLER
 # ==========================
 @bot.message_handler(commands=["start"])
 def start(message):
@@ -48,7 +67,7 @@ def start(message):
         if not_joined:
             bot.send_message(
                 message.chat.id,
-                "❗ <b>Botdan foydalanish uchun quyidagi kanallarga obuna bo‘ling:</b>",
+                "📢 <b>Botdan foydalanish uchun quyidagi kanallarga obuna bo‘ling:</b>",
                 reply_markup=subscription_menu(user_id, start_param)
             )
             return
