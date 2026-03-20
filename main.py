@@ -2,44 +2,12 @@ import os
 from flask import Flask, request
 import telebot
 
-# ==========================
-#   LOADER
-# ==========================
-from loader import bot, db, ADMIN_ID, is_vip
+from loader import bot, db, APP_URL, is_admin, is_vip
 
-# ==========================
-#   HANDLERLARNI IMPORT QILISH
-# ==========================
+# HANDLERLAR
+from handlers.anime_page import open_anime_page, build_episode_keyboard
+from handlers.channels.check import subscription_menu  # majburiy obuna oynasi
 
-# ADMIN PANEL
-from handlers.admin_panel import menu as admin_menu
-
-# ANIME ADMIN
-from handlers.admin_anime import menu as anime_menu
-from handlers.admin_anime import add_anime
-from handlers.admin_anime import add_episode
-from handlers.admin_anime import list_anime
-from handlers.admin_anime import edit_anime
-
-# KANALLAR
-from handlers.channels import menu as channels_menu
-from handlers.channels import add as channels_add
-from handlers.channels import list as channels_list
-from handlers.channels import delete as channels_delete
-from handlers.channels import check as channels_check
-
-# VIP
-from handlers.user_manage import menu as user_manage_menu
-from handlers.user_manage import add_vip
-from handlers.user_manage import delete_vip
-from handlers.user_manage import list_vip
-
-# ANIME PAGE
-from handlers.anime_page import open_anime_page
-import handlers.anime_page
-
-
-APP_URL = os.getenv("APP_URL")
 app = Flask(__name__)
 
 
@@ -48,22 +16,19 @@ app = Flask(__name__)
 # ==========================
 @bot.message_handler(commands=["start"])
 def start(message):
-    print("FULL MESSAGE:", message.text)
-
     user_id = message.from_user.id
 
+    # start param
     try:
         start_param = message.text.split(" ", 1)[1]
     except:
         start_param = None
 
-    print("START PARAM:", start_param)
-
-    # ADMIN → obuna tekshiruvi yo‘q
-    if user_id == ADMIN_ID:
+    # ADMIN → obuna tekshiruvisiz
+    if is_admin(user_id):
         return handle_start_param(message, start_param)
 
-    # VIP → obuna tekshiruvi yo‘q
+    # VIP → obuna tekshiruvisiz
     if is_vip(user_id):
         return handle_start_param(message, start_param)
 
@@ -81,10 +46,9 @@ def start(message):
                 not_joined.append(ch)
 
         if not_joined:
-            from handlers.channels.check import subscription_menu
             bot.send_message(
                 message.chat.id,
-                "📢 <b>Botdan foydalanish uchun quyidagi kanallarga obuna bo‘ling:</b>",
+                "❗ <b>Botdan foydalanish uchun quyidagi kanallarga obuna bo‘ling:</b>",
                 reply_markup=subscription_menu(user_id, start_param)
             )
             return
@@ -96,10 +60,9 @@ def start(message):
 #   START PARAMETRNI ISHLASH
 # ==========================
 def handle_start_param(message, start_param):
-
     if start_param:
 
-        # ⭐ DEEP LINK: code_episode
+        # DEEP LINK: code_episode (masalan: 4_7)
         if "_" in start_param:
             try:
                 code, ep = start_param.split("_")
@@ -107,16 +70,19 @@ def handle_start_param(message, start_param):
             except:
                 pass
 
-        # Oddiy anime kodi
+        # Faqat kod: "4"
         if start_param.isdigit():
             return open_anime_page(message, int(start_param))
 
         # anime_4 format
         if start_param.startswith("anime_"):
-            code = int(start_param.replace("anime_", ""))
-            return open_anime_page(message, code)
+            try:
+                code = int(start_param.replace("anime_", ""))
+                return open_anime_page(message, code)
+            except:
+                pass
 
-    # Oddiy /start
+    # Oddiy /start — ongoinglar ro‘yxati
     animes = list(db.animes.find({"status": "Ongoing"}).sort("code", 1))
 
     if not animes:
@@ -143,8 +109,6 @@ def open_episode_from_start(message, code, ep_num):
 
     caption = f"<b>{anime['name']}</b>\n<i>{ep_num}-qism</i>"
 
-    # Pastida qismlar ro‘yxati bo‘ladi
-    from handlers.anime_page import build_episode_keyboard
     kb = build_episode_keyboard(code, 1, current_ep=ep_num)
 
     bot.send_video(
@@ -157,19 +121,7 @@ def open_episode_from_start(message, code, ep_num):
 
 
 # ==========================
-#   /stop — admin panel
-# ==========================
-@bot.message_handler(commands=["stop"])
-def stop(message):
-    if message.from_user.id == ADMIN_ID:
-        from admin_menu import admin_panel
-        bot.send_message(message.chat.id, "🛠 Admin panel", reply_markup=admin_panel())
-    else:
-        bot.send_message(message.chat.id, "❌ Bu buyruq faqat admin uchun.")
-
-
-# ==========================
-#   WEBHOOK
+#   WEBHOOK ROUTES
 # ==========================
 @app.route("/", methods=["GET"])
 def index():
