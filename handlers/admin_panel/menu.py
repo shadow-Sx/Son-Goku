@@ -12,7 +12,7 @@ def big_admin_menu():
         InlineKeyboardButton("📊 Statistika", callback_data="stats"),
         InlineKeyboardButton("✉️ Xabar yuborish", callback_data="broadcast")
     )
-    kb.row(InlineKeyboardButton("📬 Post tayyorlash", callback_data="post"))
+    kb.row(InlineKeyboardButton("📬 Post tayyorlash", callback_data="post_menu"))
     kb.row(
         InlineKeyboardButton("🎥 Animelar sozlash", callback_data="anime_menu"),
         InlineKeyboardButton("💳 Hamyonlar", callback_data="wallets")
