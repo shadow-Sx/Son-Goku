@@ -1,5 +1,5 @@
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
-from loader import bot, ADMINS
+from loader import bot, is_admin
 from admin_menu import admin_panel
 
 # ==========================
@@ -34,7 +34,7 @@ def big_admin_menu():
 # ==========================
 #   🛠 Boshqarish tugmasi
 # ==========================
-@bot.message_handler(func=lambda m: m.text == "🛠 Boshqarish" and m.from_user.id == ADMINS)
+@bot.message_handler(func=lambda m: m.text == "🛠 Boshqarish" and is_admin(m.from_user.id))
 def open_admin_menu(message):
     bot.send_message(message.chat.id, "🛠 <b>Admin panel</b>", reply_markup=big_admin_menu())
 
