@@ -3,7 +3,7 @@ from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 
 # ==========================
-#   EPISODE KEYBOARD
+#   EPISODE LIST KEYBOARD
 # ==========================
 def build_episode_keyboard(code, page=1, current_ep=None):
     kb = InlineKeyboardMarkup()
@@ -11,7 +11,6 @@ def build_episode_keyboard(code, page=1, current_ep=None):
     episodes = list(db.episodes.find({"anime_code": code}).sort("episode", 1))
     total = len(episodes)
 
-    # 12 tadan bo‘lib chiqaramiz
     per_page = 12
     start = (page - 1) * per_page
     end = start + per_page
@@ -19,10 +18,18 @@ def build_episode_keyboard(code, page=1, current_ep=None):
 
     row = []
     for ep in page_eps:
-        text = f"{ep['episode']}"
-        if current_ep == ep["episode"]:
+        ep_num = ep["episode"]
+        text = f"{ep_num}"
+
+        if current_ep == ep_num:
             text = f"▶️ {text}"
-        row.append(InlineKeyboardButton(text, callback_data=f"open_ep:{code}:{ep['episode']}"))
+
+        row.append(
+            InlineKeyboardButton(
+                text,
+                callback_data=f"open_ep:{code}:{ep_num}"
+            )
+        )
 
         if len(row) == 3:
             kb.row(*row)
@@ -31,7 +38,7 @@ def build_episode_keyboard(code, page=1, current_ep=None):
     if row:
         kb.row(*row)
 
-    # Navigatsiya
+    # Navigation
     nav = []
     if page > 1:
         nav.append(InlineKeyboardButton("⬅️", callback_data=f"page:{code}:{page-1}"))
@@ -53,32 +60,51 @@ def open_anime_page(message, code):
         bot.send_message(message.chat.id, "❌ Anime topilmadi.")
         return
 
-    text = f"<b>{anime['name']}</b>\n\n{anime.get('description', '')}"
+    text = f"<b>{anime['name']}</b>\n\n{anime.get('info', '')}"
 
     kb = build_episode_keyboard(code, 1)
 
-    bot.send_message(
-        message.chat.id,
-        text,
-        reply_markup=kb,
-        parse_mode="HTML"
-    )
+    # Media bilan yuborish
+    if anime["media_type"] == "photo":
+        bot.send_photo(
+            message.chat.id,
+            anime["media_file_id"],
+            caption=text,
+            reply_markup=kb,
+            parse_mode="HTML"
+        )
+    else:
+        bot.send_video(
+            message.chat.id,
+            anime["media_file_id"],
+            caption=text,
+            reply_markup=kb,
+            parse_mode="HTML"
+        )
 
 
 # ==========================
-#   CALLBACK HANDLERLAR
+#   PAGINATION CALLBACK
 # ==========================
-@bot.callback_query_handler(func=lambda call: call.data.startswith("page:"))
+@bot.callback_query_handler(func=lambda c: c.data.startswith("page:"))
 def page_handler(call):
     _, code, page = call.data.split(":")
     code = int(code)
     page = int(page)
 
     kb = build_episode_keyboard(code, page)
-    bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id, reply_markup=kb)
+
+    bot.edit_message_reply_markup(
+        call.message.chat.id,
+        call.message.message_id,
+        reply_markup=kb
+    )
 
 
-@bot.callback_query_handler(func=lambda call: call.data.startswith("open_ep:"))
+# ==========================
+#   EPISODE OPEN CALLBACK
+# ==========================
+@bot.callback_query_handler(func=lambda c: c.data.startswith("open_ep:"))
 def open_episode(call):
     _, code, ep = call.data.split(":")
     code = int(code)
