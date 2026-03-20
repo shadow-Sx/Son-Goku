@@ -35,7 +35,8 @@ db = client["anime_bot"]
 #   ADMINLAR
 # ==========================
 ADMINS = [
-    123456789,   # o'zingning ID'ingni qo'y
+    7026418050,
+    7797502113   # o'zingning ID'ingni qo'y
     # boshqa adminlar bo'lsa qo'sh
 ]
 
