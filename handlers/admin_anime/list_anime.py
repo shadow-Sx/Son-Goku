@@ -1,4 +1,4 @@
-from main import bot, ADMIN_ID, db
+from main import bot, ADMINS, db
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 ITEMS_PER_PAGE = 50
@@ -9,7 +9,7 @@ ITEMS_PER_PAGE = 50
 # ==========================
 @bot.callback_query_handler(func=lambda c: c.data == "anime_list")
 def anime_list_start(call):
-    if call.from_user.id != ADMIN_ID:
+    if call.from_user.id != ADMINS:
         return
 
     show_anime_page(call.message.chat.id, 1)
