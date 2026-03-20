@@ -50,16 +50,18 @@ app = Flask(__name__)
 @bot.message_handler(commands=["start"])
 def start(message):
     print("USER ID:", message.from_user.id)
-    print("FULL MESSAGE:", message.text)
 
     user_id = message.from_user.id
 
-    try:
-        start_param = message.text.split(" ", 1)[1]
-    except:
-        start_param = None
-
-    print("START PARAM:", start_param)
+    # ADMIN → boshqarish tugmasi chiqadi
+    if is_admin(user_id):
+        from handlers.admin_panel.menu import admin_panel
+        bot.send_message(
+            message.chat.id,
+            "🛠 Admin panel",
+            reply_markup=admin_panel()
+        )
+        return
 
     # ADMIN → obuna tekshiruvi yo‘q
     if user_id in ADMINS:
