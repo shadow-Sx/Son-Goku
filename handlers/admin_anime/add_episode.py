@@ -1,11 +1,11 @@
-from loader import bot, db, ADMINS
+from loader import bot, db, is_admin
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 temp_ep = {}
 
 @bot.callback_query_handler(func=lambda c: c.data == "anime_add_episode")
 def add_episode_start(call):
-    if call.from_user.id != ADMINS:
+    if not is_admin(call.from_user.id):
         return
 
     temp_ep[call.from_user.id] = {"step": 1}
@@ -51,7 +51,6 @@ def add_episode_video(message):
 
     temp_ep.pop(uid, None)
 
-    # ⭐ TO‘G‘RI HAVOLA
     bot.send_message(
         message.chat.id,
         f"✅ {episode_number}-qism qo‘shildi!\n\n"
