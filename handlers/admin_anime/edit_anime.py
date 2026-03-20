@@ -1,4 +1,4 @@
-from main import bot, ADMIN_ID, db
+from main import bot, ADMINS, db
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 edit_temp = {}
@@ -9,7 +9,7 @@ edit_temp = {}
 # ==========================
 @bot.callback_query_handler(func=lambda c: c.data == "anime_edit")
 def edit_anime_start(call):
-    if call.from_user.id != ADMIN_ID:
+    if call.from_user.id != ADMINS:
         return
 
     edit_temp[call.from_user.id] = {"step": 1}
