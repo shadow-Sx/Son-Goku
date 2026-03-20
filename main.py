@@ -2,52 +2,68 @@ import os
 from flask import Flask, request
 import telebot
 
-from loader import bot, db, APP_URL, is_admin, is_vip
+# ==========================
+#   LOADER
+# ==========================
+from loader import bot, db, ADMIN_ID, is_vip, APP_URL
+
 
 # ==========================
-#   HANDLERLARNI YUKLASH
+#   HANDLERLARNI IMPORT QILISH
 # ==========================
 
-# Anime sahifasi va qism ochish
+# ADMIN PANEL
+from handlers.admin_panel import menu as admin_menu
+
+# ANIME ADMIN
+from handlers.admin_anime import menu as anime_menu
+from handlers.admin_anime import add_anime
+from handlers.admin_anime import add_episode
+from handlers.admin_anime import list_anime
+from handlers.admin_anime import edit_anime
+
+# KANALLAR
+from handlers.channels import menu as channels_menu
+from handlers.channels import add as channels_add
+from handlers.channels import list as channels_list
+from handlers.channels import delete as channels_delete
+from handlers.channels import check as channels_check
+
+# VIP
+from handlers.user_manage import menu as user_manage_menu
+from handlers.user_manage import add_vip
+from handlers.user_manage import delete_vip
+from handlers.user_manage import list_vip
+
+# ANIME PAGE
 from handlers.anime_page import open_anime_page, build_episode_keyboard
-
-# Majburiy obuna oynasi
-from handlers.channels.check import subscription_menu
-
-# Admin panel (agar bo‘lsa)
-try:
-    from handlers.admin_panel import *
-except:
-    pass
-
-# Anime qo‘shish, epizod qo‘shish va boshqalar (agar bo‘lsa)
-try:
-    from handlers.admin_anime import *
-except:
-    pass
+import handlers.anime_page
 
 
 app = Flask(__name__)
 
 
 # ==========================
-#   /start HANDLER
+#   /start
 # ==========================
 @bot.message_handler(commands=["start"])
 def start(message):
+    print("FULL MESSAGE:", message.text)
+
     user_id = message.from_user.id
 
-    # start param
     try:
         start_param = message.text.split(" ", 1)[1]
     except:
         start_param = None
 
-    # ADMIN → obuna tekshiruvisiz
-    if is_admin(user_id):
+    print("START PARAM:", start_param)
+
+    # ADMIN → obuna tekshiruvi yo‘q
+    if user_id == ADMIN_ID:
         return handle_start_param(message, start_param)
 
-    # VIP → obuna tekshiruvisiz
+    # VIP → obuna tekshiruvi yo‘q
     if is_vip(user_id):
         return handle_start_param(message, start_param)
 
@@ -65,6 +81,7 @@ def start(message):
                 not_joined.append(ch)
 
         if not_joined:
+            from handlers.channels.check import subscription_menu
             bot.send_message(
                 message.chat.id,
                 "📢 <b>Botdan foydalanish uchun quyidagi kanallarga obuna bo‘ling:</b>",
@@ -79,9 +96,10 @@ def start(message):
 #   START PARAMETRNI ISHLASH
 # ==========================
 def handle_start_param(message, start_param):
+
     if start_param:
 
-        # DEEP LINK: code_episode (masalan: 4_7)
+        # ⭐ DEEP LINK: code_episode
         if "_" in start_param:
             try:
                 code, ep = start_param.split("_")
@@ -89,19 +107,16 @@ def handle_start_param(message, start_param):
             except:
                 pass
 
-        # Faqat kod: "4"
+        # Oddiy anime kodi
         if start_param.isdigit():
             return open_anime_page(message, int(start_param))
 
         # anime_4 format
         if start_param.startswith("anime_"):
-            try:
-                code = int(start_param.replace("anime_", ""))
-                return open_anime_page(message, code)
-            except:
-                pass
+            code = int(start_param.replace("anime_", ""))
+            return open_anime_page(message, code)
 
-    # Oddiy /start — ongoinglar ro‘yxati
+    # Oddiy /start
     animes = list(db.animes.find({"status": "Ongoing"}).sort("code", 1))
 
     if not animes:
@@ -140,7 +155,19 @@ def open_episode_from_start(message, code, ep_num):
 
 
 # ==========================
-#   WEBHOOK ROUTES
+#   /stop — admin panel
+# ==========================
+@bot.message_handler(commands=["stop"])
+def stop(message):
+    if message.from_user.id == ADMIN_ID:
+        from admin_menu import admin_panel
+        bot.send_message(message.chat.id, "🛠 Admin panel", reply_markup=admin_panel())
+    else:
+        bot.send_message(message.chat.id, "❌ Bu buyruq faqat admin uchun.")
+
+
+# ==========================
+#   WEBHOOK
 # ==========================
 @app.route("/", methods=["GET"])
 def index():
