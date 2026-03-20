@@ -1,9 +1,30 @@
-from loader import bot, post_temp, db, is_admin
+from loader import bot, post_temp, is_admin
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 
 # ==========================
-#   YUBORISH FUNKSIYASI
+#   TUGMALARNI QATORLARGA BO‘LISH
+# ==========================
+def build_buttons(buttons):
+    kb = InlineKeyboardMarkup()
+
+    row = []
+    for i, btn in enumerate(buttons):
+        row.append(InlineKeyboardButton(btn["text"], url=btn["url"]))
+
+        # Har 2 ta tugmadan keyin yangi qator
+        if len(row) == 2:
+            kb.row(*row)
+            row = []
+
+    if row:
+        kb.row(*row)
+
+    return kb
+
+
+# ==========================
+#   POSTNI YUBORISH
 # ==========================
 def send_post_to_channels(call):
     uid = call.from_user.id
@@ -23,8 +44,7 @@ def send_post_to_channels(call):
         return
 
     mode = temp.get("mode")
-
-    sent_count = 0  # nechta kanalga yuborilganini hisoblaymiz
+    sent_count = 0
 
     # ==========================
     #   AVTO REJIM
@@ -32,17 +52,14 @@ def send_post_to_channels(call):
     if mode == "auto":
         text = temp["text"]
         buttons = temp["buttons"]
-
-        kb = InlineKeyboardMarkup()
-        for btn in buttons:
-            kb.row(InlineKeyboardButton(btn["text"], url=btn["url"]))
+        kb = build_buttons(buttons)
 
         for ch_id in channels:
             try:
                 bot.send_message(ch_id, text, reply_markup=kb)
                 sent_count += 1
             except Exception as e:
-                print(f"Kanalga yuborilmadi: {ch_id} | {e}")
+                print(f"[XATO] Kanalga yuborilmadi: {ch_id} | {e}")
 
     # ==========================
     #   QO‘LDA REJIM
@@ -53,11 +70,7 @@ def send_post_to_channels(call):
         caption = temp.get("caption")
         buttons = temp.get("buttons", [])
 
-        kb = None
-        if buttons:
-            kb = InlineKeyboardMarkup()
-            for btn in buttons:
-                kb.row(InlineKeyboardButton(btn["text"], url=btn["url"]))
+        kb = build_buttons(buttons) if buttons else None
 
         for ch_id in channels:
             try:
@@ -76,7 +89,7 @@ def send_post_to_channels(call):
                 sent_count += 1
 
             except Exception as e:
-                print(f"Kanalga yuborilmadi: {ch_id} | {e}")
+                print(f"[XATO] Kanalga yuborilmadi: {ch_id} | {e}")
 
     # ==========================
     #   YUBORISH TUGADI
