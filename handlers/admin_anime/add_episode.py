@@ -1,11 +1,11 @@
-from loader import bot, db, ADMIN_ID
+from loader import bot, db, ADMINS
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 temp_ep = {}
 
 @bot.callback_query_handler(func=lambda c: c.data == "anime_add_episode")
 def add_episode_start(call):
-    if call.from_user.id != ADMIN_ID:
+    if call.from_user.id != ADMINS:
         return
 
     temp_ep[call.from_user.id] = {"step": 1}
