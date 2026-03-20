@@ -13,6 +13,10 @@ def manual_post_receive(message):
     if post_temp.get(uid, {}).get("mode") != "manual":
         return
 
+    # Tugma qo‘shish jarayonida media qabul qilmaymiz
+    if post_temp[uid].get("step") in ["btn_text", "btn_url"]:
+        return
+
     if not is_admin(uid):
         return
 
@@ -53,9 +57,7 @@ def manual_post_receive(message):
     # TEMP saqlanadi
     post_temp[uid] = temp
 
-    # ==========================
-    #   PREVIEW
-    # ==========================
+    # Preview
     show_manual_preview(message.chat.id, uid)
 
 
