@@ -1,4 +1,4 @@
-from main import bot, ADMIN_ID, db
+from main import bot, ADMINS, db
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 # TEMP DATA (admin uchun vaqtinchalik saqlash)
@@ -9,7 +9,7 @@ temp = {}
 # ==========================
 @bot.callback_query_handler(func=lambda c: c.data == "anime_add")
 def anime_add_start(call):
-    if call.from_user.id != ADMIN_ID:
+    if call.from_user.id != ADMINS:
         return
 
     temp[call.from_user.id] = {"step": 1}
@@ -51,7 +51,7 @@ def anime_add_info(message):
 # ==========================
 @bot.callback_query_handler(func=lambda c: c.data.startswith("anime_status_"))
 def anime_add_status(call):
-    if call.from_user.id != ADMIN_ID:
+    if call.from_user.id != ADMINS:
         return
 
     status = "Ongoing" if call.data.endswith("ongoing") else "Tugallangan"
