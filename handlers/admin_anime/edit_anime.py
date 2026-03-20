@@ -43,10 +43,12 @@ def edit_anime_code(message):
     }
 
     kb = InlineKeyboardMarkup()
-    kb.row(InlineKeyboardButton("📝 Anime nomi", callback_data="edit_name"))
-    kb.row(InlineKeyboardButton("🧾 Izoh", callback_data="edit_info"))
-    kb.row(InlineKeyboardButton("🔄 Holati", callback_data="edit_status"))
-    kb.row(InlineKeyboardButton("🎞 Qism", callback_data="edit_episode"))
+kb.row(InlineKeyboardButton("📝 Anime nomi", callback_data="edit_name"))
+kb.row(InlineKeyboardButton("🧾 Izoh", callback_data="edit_info"))
+kb.row(InlineKeyboardButton("🔄 Holati", callback_data="edit_status"))
+kb.row(InlineKeyboardButton("🎞 Qism", callback_data="edit_episode"))
+kb.row(InlineKeyboardButton("🗑 Anime o‘chirish", callback_data="edit_delete"))
+kb.row(InlineKeyboardButton("🧹 Qismlarni tozalash", callback_data="edit_clear_eps"))
 
     bot.send_message(
         message.chat.id,
