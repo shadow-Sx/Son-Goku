@@ -12,7 +12,10 @@ def big_admin_menu():
         InlineKeyboardButton("📊 Statistika", callback_data="stats"),
         InlineKeyboardButton("✉️ Xabar yuborish", callback_data="broadcast")
     )
+    
+    # 🔥 TO‘G‘RILANGAN QATOR
     kb.row(InlineKeyboardButton("📬 Post tayyorlash", callback_data="post_menu"))
+    
     kb.row(
         InlineKeyboardButton("🎥 Animelar sozlash", callback_data="anime_menu"),
         InlineKeyboardButton("💳 Hamyonlar", callback_data="wallets")
@@ -47,36 +50,3 @@ def close_admin_menu(call):
     bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id, reply_markup=None)
     bot.send_message(call.message.chat.id, "◀️ Orqaga qaytdingiz", reply_markup=admin_panel())
     bot.answer_callback_query(call.id)
-
-
-# ==========================
-#   📢 Kanallar bo‘limi
-# ==========================
-from handlers.channels.menu import channels_menu
-
-@bot.callback_query_handler(func=lambda c: c.data == "channels")
-def open_channels(call):
-    bot.send_message(call.message.chat.id, "📢 <b>Majburiy obuna kanallari</b>", reply_markup=channels_menu())
-    bot.answer_callback_query(call.id)
-
-
-# ==========================
-#   🔍 Foydalanuvchini boshqarish
-# ==========================
-from handlers.user_manage.menu import user_manage_menu
-
-@bot.callback_query_handler(func=lambda c: c.data == "users")
-def open_user_manage(call):
-    bot.send_message(call.message.chat.id, "🔍 <b>Foydalanuvchini boshqarish</b>", reply_markup=user_manage_menu())
-    bot.answer_callback_query(call.id)
-
-
-# ==========================
-#   FAOL BO‘LMAGAN TUGMALAR
-# ==========================
-@bot.callback_query_handler(func=lambda c: c.data in [
-    "settings", "stats", "broadcast", "wallets",
-    "buttons", "texts", "admins", "bot_status"
-])
-def not_ready(call):
-    bot.answer_callback_query(call.id, "❌ Bu bo‘lim hali faol emas!", show_alert=True)
