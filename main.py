@@ -94,44 +94,36 @@ def set_webhook():
 import anime_page
 
 # Admin panel
-from handlers.admin_panel import menu as admin_panel_menu
+import handlers.admin_panel.menu
 
 # Anime boshqaruvi
-from handlers.admin_anime import (
-    add_anime,
-    add_episode,
-    edit_anime,
-    list_anime,
-    menu as anime_menu,
-    delete_anime,
-    clear_episodes,
-)
+import handlers.admin_anime.add_anime
+import handlers.admin_anime.add_episode
+import handlers.admin_anime.edit_anime
+import handlers.admin_anime.list_anime
+import handlers.admin_anime.menu
+import handlers.admin_anime.delete_anime
+import handlers.admin_anime.clear_episodes
 
 # Kanal boshqaruvi
-from handlers.channels import (
-    add as ch_add,
-    delete as ch_delete,
-    list as ch_list,
-    check as ch_check,
-    menu as ch_menu,
-)
+import handlers.channels.add
+import handlers.channels.delete
+import handlers.channels.list
+import handlers.channels.check
+import handlers.channels.menu
 
 # VIP boshqaruvi
-from handlers.user_manage import (
-    add_vip,
-    delete_vip,
-    list_vip,
-    menu as user_menu,
-)
+import handlers.user_manage.add_vip
+import handlers.user_manage.delete_vip
+import handlers.user_manage.list_vip
+import handlers.user_manage.menu
 
-# POST YUBORISH MODULLARI
-from handlers.post import (
-    menu,
-    auto_post,
-    manual_post,
-    channel_select,
-    send
-)
+# POST YUBORISH MODULLARI (TO‘G‘RI USUL)
+import handlers.post.menu
+import handlers.post.auto_post
+import handlers.post.manual_post
+import handlers.post.channel_select
+import handlers.post.send
 
 
 # ==========================
