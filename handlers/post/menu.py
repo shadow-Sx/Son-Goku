@@ -19,7 +19,8 @@ def post_menu(call):
         "caption": None,
         "buttons": [],
         "channels": [],
-        "anime_code": None
+        "anime_code": None,
+        "step": None
     }
 
     kb = InlineKeyboardMarkup()
@@ -47,6 +48,7 @@ def post_auto_start(call):
         return
 
     post_temp[uid]["mode"] = "auto"
+    post_temp[uid]["step"] = "auto_code"
 
     bot.send_message(
         call.message.chat.id,
@@ -66,6 +68,9 @@ def post_manual_start(call):
         return
 
     post_temp[uid]["mode"] = "manual"
+    post_temp[uid]["step"] = None
+    post_temp[uid]["buttons"] = []
+    post_temp[uid]["channels"] = []
 
     bot.send_message(
         call.message.chat.id,
