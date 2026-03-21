@@ -9,11 +9,10 @@ from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 def manual_post_receive(message):
     uid = message.from_user.id
 
-    # Faqat manual rejimda ishlaydi
     if post_temp.get(uid, {}).get("mode") != "manual":
         return
 
-    # Tugma qo‘shish jarayonida media qabul qilinmaydi
+    # Tugma qo‘shish / tahrirlash jarayonida postni o‘zgartirmaymiz
     if post_temp[uid].get("step") in ["btn_text", "btn_url", "btn_edit_text", "btn_edit_url"]:
         return
 
@@ -22,33 +21,21 @@ def manual_post_receive(message):
 
     temp = post_temp[uid]
 
-    # ==========================
-    #   MATN
-    # ==========================
     if message.content_type == "text":
         temp["type"] = "text"
         temp["caption"] = message.text
         temp["file_id"] = None
 
-    # ==========================
-    #   RASM
-    # ==========================
     elif message.content_type == "photo":
         temp["type"] = "photo"
         temp["file_id"] = message.photo[-1].file_id
         temp["caption"] = message.caption
 
-    # ==========================
-    #   VIDEO
-    # ==========================
     elif message.content_type == "video":
         temp["type"] = "video"
         temp["file_id"] = message.video.file_id
         temp["caption"] = message.caption
 
-    # ==========================
-    #   HUJJAT
-    # ==========================
     elif message.content_type == "document":
         temp["type"] = "document"
         temp["file_id"] = message.document.file_id
@@ -72,7 +59,6 @@ def show_manual_preview(chat_id, uid):
     )
     kb.row(InlineKeyboardButton("📡 Yuborish", callback_data="post_select_channels"))
 
-    # Post preview
     if temp["type"] == "text":
         bot.send_message(chat_id, temp["caption"], reply_markup=kb)
 
@@ -85,12 +71,16 @@ def show_manual_preview(chat_id, uid):
     elif temp["type"] == "document":
         bot.send_document(chat_id, temp["file_id"], caption=temp["caption"], reply_markup=kb)
 
+
 # ==========================
 #   3) Tugma qo‘shishni boshlash
 # ==========================
 @bot.callback_query_handler(func=lambda c: c.data == "manual_add_button")
 def manual_add_button_start(call):
     uid = call.from_user.id
+    if not is_admin(uid):
+        return
+
     post_temp[uid]["step"] = "btn_text"
 
     bot.send_message(call.message.chat.id, "📝 Tugma matnini kiriting:")
@@ -136,7 +126,7 @@ def manual_button_url(message):
 @bot.callback_query_handler(func=lambda c: c.data == "manual_buttons_menu")
 def manual_buttons_menu(call):
     uid = call.from_user.id
-    buttons = post_temp[uid]["buttons"]
+    buttons = post_temp[uid].get("buttons", [])
 
     kb = InlineKeyboardMarkup()
 
@@ -150,8 +140,8 @@ def manual_buttons_menu(call):
             InlineKeyboardButton("❌", callback_data=f"btn_delete:{i}")
         )
 
-    kb.row(InlineKeyboardButton("⬆️ Yuqoriga", callback_data="btn_up_all"))
-    kb.row(InlineKeyboardButton("⬇️ Pastga", callback_data="btn_down_all"))
+    kb.row(InlineKeyboardButton("⬆️ A‑Z", callback_data="btn_up_all"))
+    kb.row(InlineKeyboardButton("⬇️ Z‑A", callback_data="btn_down_all"))
     kb.row(InlineKeyboardButton("◀️ Orqaga", callback_data="btn_back_preview"))
 
     bot.send_message(call.message.chat.id, "🗂 <b>Tugmalar ro‘yxati</b>", reply_markup=kb)
@@ -224,7 +214,7 @@ def btn_up_all(call):
     uid = call.from_user.id
     post_temp[uid]["buttons"] = sorted(post_temp[uid]["buttons"], key=lambda x: x["text"])
 
-    bot.answer_callback_query(call.id, "⬆️ Yuqoriga tartiblandi!")
+    bot.answer_callback_query(call.id, "⬆️ A‑Z tartiblandi!")
     manual_buttons_menu(call)
 
 
@@ -233,7 +223,7 @@ def btn_down_all(call):
     uid = call.from_user.id
     post_temp[uid]["buttons"] = sorted(post_temp[uid]["buttons"], key=lambda x: x["text"], reverse=True)
 
-    bot.answer_callback_query(call.id, "⬇️ Pastga tartiblandi!")
+    bot.answer_callback_query(call.id, "⬇️ Z‑A tartiblandi!")
     manual_buttons_menu(call)
 
 
@@ -245,20 +235,3 @@ def btn_back_preview(call):
     uid = call.from_user.id
     show_manual_preview(call.message.chat.id, uid)
     bot.answer_callback_query(call.id)
-
-def build_buttons(buttons):
-    kb = InlineKeyboardMarkup()
-
-    row = []
-    for i, btn in enumerate(buttons):
-        row.append(InlineKeyboardButton(btn["text"], url=btn["url"]))
-
-        # Har 2 ta tugmadan keyin yangi qator
-        if len(row) == 2:
-            kb.row(*row)
-            row = []
-
-    if row:
-        kb.row(*row)
-
-    return kb
