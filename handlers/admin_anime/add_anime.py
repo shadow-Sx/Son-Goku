@@ -1,105 +1,70 @@
 from loader import bot, db, is_admin
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-# TEMP DATA (admin uchun vaqtinchalik saqlash)
-temp = {}
+anime_add_temp = {}
 
-# ==========================
-#   1) Anime qo‘shish tugmasi
-# ==========================
-@bot.callback_query_handler(func=lambda c: c.data == "anime_add")
-def anime_add_start(call):
-    if not is_admin(call.from_user.id):
+
+@bot.callback_query_handler(func=lambda c: c.data == "add_anime")
+def add_anime_start(call):
+    uid = call.from_user.id
+    if not is_admin(uid):
         return
 
-    temp[call.from_user.id] = {"step": 1}
+    anime_add_temp[uid] = {"step": "name"}
 
-    bot.send_message(call.message.chat.id, "➕ <b>Anime qo‘shish</b>\n\nAnime nomini kiriting:")
+    bot.send_message(call.message.chat.id, "🎬 Anime nomini kiriting:")
     bot.answer_callback_query(call.id)
 
 
-# ==========================
-#   2) Anime nomi
-# ==========================
-@bot.message_handler(func=lambda m: temp.get(m.from_user.id, {}).get("step") == 1)
-def anime_add_name(message):
-    temp[message.from_user.id]["name"] = message.text
-    temp[message.from_user.id]["step"] = 2
+@bot.message_handler(func=lambda m: anime_add_temp.get(m.from_user.id, {}).get("step") == "name")
+def add_anime_name(message):
+    uid = message.from_user.id
+    anime_add_temp[uid]["name"] = message.text
+    anime_add_temp[uid]["step"] = "info"
 
-    bot.send_message(message.chat.id, "📝 Anime haqida izoh yuboring:")
+    bot.send_message(message.chat.id, "ℹ️ Anime haqida qisqacha info kiriting:")
 
 
-# ==========================
-#   3) Anime info
-# ==========================
-@bot.message_handler(func=lambda m: temp.get(m.from_user.id, {}).get("step") == 2)
-def anime_add_info(message):
-    temp[message.from_user.id]["info"] = message.text
-    temp[message.from_user.id]["step"] = 3
+@bot.message_handler(func=lambda m: anime_add_temp.get(m.from_user.id, {}).get("step") == "info")
+def add_anime_info(message):
+    uid = message.from_user.id
+    anime_add_temp[uid]["info"] = message.text
+    anime_add_temp[uid]["step"] = "media"
 
-    kb = InlineKeyboardMarkup()
-    kb.row(
-        InlineKeyboardButton("🔥 Ongoing", callback_data="anime_status_ongoing"),
-        InlineKeyboardButton("✔ Tugallangan", callback_data="anime_status_done")
-    )
-
-    bot.send_message(message.chat.id, "📌 Anime holatini tanlang:", reply_markup=kb)
+    bot.send_message(message.chat.id, "📸 Anime uchun rasm yoki video yuboring:")
 
 
-# ==========================
-#   4) Anime holati
-# ==========================
-@bot.callback_query_handler(func=lambda c: c.data.startswith("anime_status_"))
-def anime_add_status(call):
-    if not is_admin(call.from_user.id):
-        return
+@bot.message_handler(content_types=["photo", "video"], func=lambda m: anime_add_temp.get(m.from_user.id, {}).get("step") == "media")
+def add_anime_media(message):
+    uid = message.from_user.id
 
-    status = "Ongoing" if call.data.endswith("ongoing") else "Tugallangan"
-    temp[call.from_user.id]["status"] = status
-    temp[call.from_user.id]["step"] = 4
+    if message.content_type == "photo":
+        anime_add_temp[uid]["photo_id"] = message.photo[-1].file_id
+        anime_add_temp[uid]["video_id"] = None
 
-    bot.send_message(call.message.chat.id, "📷 Anime uchun rasm yoki video yuboring:")
-    bot.answer_callback_query(call.id)
+    elif message.content_type == "video":
+        anime_add_temp[uid]["video_id"] = message.video.file_id
+        anime_add_temp[uid]["photo_id"] = None
 
-
-# ==========================
-#   5) Anime media (photo/video)
-# ==========================
-@bot.message_handler(content_types=["photo", "video"])
-def anime_add_media(message):
-    if temp.get(message.from_user.id, {}).get("step") != 4:
-        return
-
-    data = temp[message.from_user.id]
-
-    # Media type
-    if message.photo:
-        file_id = message.photo[-1].file_id
-        media_type = "photo"
-    else:
-        file_id = message.video.file_id
-        media_type = "video"
-
-    # Generate anime code
+    # Kod generatsiya qilamiz
     last = db.animes.find_one(sort=[("code", -1)])
     code = (last["code"] + 1) if last else 1
 
-    # Save to DB
+    anime_add_temp[uid]["code"] = code
+
+    # DB ga yozamiz
     db.animes.insert_one({
         "code": code,
-        "name": data["name"],
-        "info": data["info"],
-        "status": data["status"],
-        "media_type": media_type,
-        "media_file_id": file_id
+        "name": anime_add_temp[uid]["name"],
+        "info": anime_add_temp[uid]["info"],
+        "photo_id": anime_add_temp[uid]["photo_id"],
+        "video_id": anime_add_temp[uid]["video_id"]
     })
-
-    # Clear temp
-    temp.pop(message.from_user.id, None)
 
     bot.send_message(
         message.chat.id,
-        f"✅ <b>Anime qo‘shildi!</b>\n\n"
-        f"📌 Anime kodi: <b>{code}</b>\n"
-        f"🔗 Havola: https://t.me/{bot.get_me().username}?start={code}"
+        f"✅ Anime qo‘shildi!\n\n<b>Kod:</b> {code}\n"
+        f"<b>Havola:</b> https://t.me/{bot.get_me().username}?start={code}"
     )
+
+    anime_add_temp.pop(uid, None)
