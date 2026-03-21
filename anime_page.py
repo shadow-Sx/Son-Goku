@@ -2,42 +2,20 @@ from loader import bot, db
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 
-@bot.message_handler(commands=["start"])
-def open_anime_page(message):
-    text = message.text.strip()
-
-    # 1) start parametrlari yo‘q → oddiy /start
-    if text == "/start":
-        return
-
-    # 2) start parametri bor
-    param = text.replace("/start", "").strip()
-
-    # /start 5
-    if param.isdigit():
-        code = int(param)
-
-    # /start anime_5
-    elif param.startswith("anime_") and param.replace("anime_", "").isdigit():
-        code = int(param.replace("anime_", ""))
-
-    else:
-        bot.send_message(message.chat.id, "❌ Noto‘g‘ri havola.")
-        return
-
+# ==========================
+#   ANIME SAHIFASINI CHIQARISH
+# ==========================
+def send_anime_page(chat_id: int, code: int):
     # Anime topamiz
     anime = db.animes.find_one({"code": code})
     if not anime:
-        bot.send_message(message.chat.id, "❌ Bunday anime topilmadi.")
+        bot.send_message(chat_id, "❌ Bunday anime topilmadi.")
         return
 
-    # Qismlar soni
+    # Qismlar
     episodes = list(db.episodes.find({"anime_code": code}).sort("number", 1))
 
-    # Tugmalar
     kb = InlineKeyboardMarkup()
-
-    # Qismlar tugmalari
     for ep in episodes:
         kb.row(
             InlineKeyboardButton(
@@ -46,24 +24,37 @@ def open_anime_page(message):
             )
         )
 
-    # Anime ma’lumotini chiqaramiz
     caption = (
         f"<b>{anime['name']}</b>\n"
         f"{anime.get('info', '')}\n\n"
         f"Qismlar soni: {len(episodes)}"
     )
 
-    # Rasm bo‘lsa — rasm bilan chiqaramiz
+    # Rasm bo‘lsa rasm bilan chiqaramiz
     if anime.get("photo_id"):
-        bot.send_photo(
-            message.chat.id,
-            anime["photo_id"],
-            caption=caption,
-            reply_markup=kb
-        )
+        bot.send_photo(chat_id, anime["photo_id"], caption=caption, reply_markup=kb)
     else:
-        bot.send_message(
-            message.chat.id,
-            caption,
-            reply_markup=kb
-        )
+        bot.send_message(chat_id, caption, reply_markup=kb)
+
+
+# ==========================
+#   QISMNI OCHISH
+# ==========================
+@bot.callback_query_handler(func=lambda c: c.data.startswith("watch_ep:"))
+def open_episode(call):
+    _, code, number = call.data.split(":")
+    code = int(code)
+    number = int(number)
+
+    ep = db.episodes.find_one({"anime_code": code, "number": number})
+    if not ep:
+        bot.answer_callback_query(call.id, "❌ Qism topilmadi!", show_alert=True)
+        return
+
+    bot.send_video(
+        call.message.chat.id,
+        ep["file_id"],
+        caption=f"{number}-qism"
+    )
+
+    bot.answer_callback_query(call.id)
