@@ -2,16 +2,13 @@ from loader import bot, db, post_temp, is_admin
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 
-# ==========================
-#   KANALLAR RO‘YXATINI YIG‘ISH
-# ==========================
 def build_channel_keyboard(uid):
     temp = post_temp.get(uid, {})
     selected = temp.get("channels", [])
 
     kb = InlineKeyboardMarkup()
 
-    channels = list(db.forced_channels.find())  # Admin bo‘lgan kanallar shu yerda
+    channels = list(db.forced_channels.find())
 
     for ch in channels:
         ch_id = ch["channel_id"]
@@ -26,7 +23,6 @@ def build_channel_keyboard(uid):
             )
         )
 
-    # Pastki tugmalar
     kb.row(
         InlineKeyboardButton("📌 Barchasi", callback_data="post_ch_all"),
         InlineKeyboardButton("✅ Tasdiqlash", callback_data="post_ch_done")
@@ -35,9 +31,6 @@ def build_channel_keyboard(uid):
     return kb
 
 
-# ==========================
-#   KANAL TANLASHNI BOSHLASH
-# ==========================
 @bot.callback_query_handler(func=lambda c: c.data == "post_select_channels")
 def post_select_channels(call):
     uid = call.from_user.id
@@ -55,9 +48,6 @@ def post_select_channels(call):
     bot.answer_callback_query(call.id)
 
 
-# ==========================
-#   KANALNI TANLASH / O‘CHIRISH (TOGGLE)
-# ==========================
 @bot.callback_query_handler(func=lambda c: c.data.startswith("post_ch_toggle:"))
 def post_channel_toggle(call):
     uid = call.from_user.id
@@ -75,7 +65,6 @@ def post_channel_toggle(call):
 
     post_temp[uid]["channels"] = selected
 
-    # Yangilangan keyboard
     kb = build_channel_keyboard(uid)
 
     bot.edit_message_reply_markup(
@@ -87,9 +76,6 @@ def post_channel_toggle(call):
     bot.answer_callback_query(call.id)
 
 
-# ==========================
-#   BARCHA KANALLARNI TANLASH
-# ==========================
 @bot.callback_query_handler(func=lambda c: c.data == "post_ch_all")
 def post_channel_select_all(call):
     uid = call.from_user.id
@@ -110,9 +96,6 @@ def post_channel_select_all(call):
     bot.answer_callback_query(call.id)
 
 
-# ==========================
-#   TASDIQLASH → SEND.PY GA O‘TISH
-# ==========================
 @bot.callback_query_handler(func=lambda c: c.data == "post_ch_done")
 def post_channel_done(call):
     uid = call.from_user.id
@@ -125,7 +108,6 @@ def post_channel_done(call):
         bot.answer_callback_query(call.id, "❌ Hech qanday kanal tanlanmadi!", show_alert=True)
         return
 
-    # Endi yuborish moduliga o‘tamiz
     from handlers.post.send import send_post_to_channels
     send_post_to_channels(call)
 
